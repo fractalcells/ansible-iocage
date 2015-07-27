@@ -94,13 +94,13 @@ def _jail_started(module, iocage_path='/usr/local/sbin/iocage', argument=None, a
     return False
 
 def jail_exists(module, iocage_path='/usr/local/sbin/iocage', argument=None, assume_absent=False):
-    cmd = "/bin/sh -c \"%s list | awk '/%s/ {print $2}'\"" %(iocage_path, argument)
+    cmd = "%s get host_hostuuid %s" %(iocage_path, argument)
     rc, uuid, err = module.run_command(cmd)
-    if not uuid and not assume_absent:
+    if not uuid and rc == 1 and not assume_absent:
         module.fail_json(msg="Jail {0} does not exist.".format(argument))
 
     if uuid and assume_absent:
-        module.fail_json(msg="Jail {0} already exists. {1}".format(argument, assume_absent))
+        module.fail_json(msg="Jail {0} already exists.".format(argument))
 
     _msg = "Jail {0} exists with uuid: {1}".format(argument, uuid)
     return uuid.strip(), False, _msg
@@ -235,20 +235,20 @@ def jail_create_clone(module, iocage_path='/usr/local/sbin/iocage', clone_from_u
     return uuid.strip(), _changed, _msg
 
 def jail_destroy(module, iocage_path='/usr/local/sbin/iocage', argument=None):
-    # XXX: enable once there's an `iocage get uuid <jailname`
-    #uuid, _, _ = jail_exists(module, iocage_path, argument, False)
-    _changed = False
-    rc = 1
-    out = ""
-    _msg = ""
-    if not module.check_mode:
-        rc, out, err = module.run_command("{0} destroy -f {1}".format(iocage_path, argument))
-        if not rc == 0:
-            module.fail_json(msg="Jail '{0}' could not be destroyed.\nstdout:\n{1}\nstderr:\n{2}".format(tag, out, err))
+    uuid, _, _ = jail_exists(module, iocage_path, argument, False)
+    if uuid:
+        _changed = False
+        rc = 1
+        out = ""
+        _msg = ""
+        if not module.check_mode:
+            rc, out, err = module.run_command("{0} destroy -f {1}".format(iocage_path, argument))
+            if not rc == 0:
+                module.fail_json(msg="Jail '{0}' could not be destroyed.\nstdout:\n{1}\nstderr:\n{2}".format(tag, out, err))
 
-        _changed = True
-        _msg = "Jail '{0}' was destroyed.".format(argument)
-        jail_exists(module, iocage_path, argument, True)
+            _changed = True
+            _msg = "Jail '{0}' was destroyed.".format(argument)
+            jail_exists(module, iocage_path, argument, True)
     return None, _changed, _msg
 
 def main():
@@ -336,11 +336,10 @@ def main():
         msgs.append(_msg)
 
     elif p["state"] == "absent":
-        # TODO: enable once `iocage get` receives uuid
-        #uuid, _, _ = jail_exists(module, iocage_path, (uuid or tag))
-        #if uuid:
-        uuid, _changed, _msg = jail_destroy(module, iocage_path, (uuid or tag))
-        msgs.append(_msg)
+        uuid, _, _ = jail_exists(module, iocage_path, (uuid or tag))
+        if uuid:
+            uuid, _changed, _msg = jail_destroy(module, iocage_path, (uuid or tag))
+            msgs.append(_msg)
 
     module.exit_json(changed=changed, msg=", ".join(msgs))
 
