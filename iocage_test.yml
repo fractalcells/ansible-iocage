@@ -17,11 +17,23 @@
     iocage: state=template clone_from=basejail_10.2-BETA1 tag=foobar
   - name: Check if foobar jail can be destroyed
     iocage: state=absent tag=foobar
+  - name: Check if absent jail can't be destroyed
+    iocage: state=absent tag=absent
+    ignore_errors: yes
+  - name: Check if absent jail can't be stopped
+    iocage: state=stopped tag=absent
+    ignore_errors: yes
+  - name: Check if absent jail can be restarted
+    iocage: state=restarted tag=absent
+    ignore_errors: yes
+  - name: Check if absent jail can be started
+    iocage: state=started tag=absent
+    ignore_errors: yes
   - name: Check if foo jail can be cloned
     iocage: state=cloned clone_from=basejail_10.2-BETA1 tag=foo
   - name: Check if foobar jail can be started
     iocage: state=started tag=foo
   - name: Check if exec works in foobar jail
     iocage: state=exec tag=foo cmd="/bin/ls -la /root"
-  - name: Check if foo jail can be purged
+  - name: Check if foo jail can be destroyed
     iocage: state=absent tag=foo
