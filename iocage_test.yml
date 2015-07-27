@@ -1,0 +1,27 @@
+- hosts: default
+  sudo: true
+  tasks:
+  - name: Check if basejail exists
+    iocage: state=exists tag=basejail_10.1-RELEASE
+  - name: Check if nginx_proxy jail can be started
+    iocage: state=started tag=nginx_proxy
+  - name: Check if nginx_proxy jail can be restarted
+    iocage: state=restarted tag=nginx_proxy
+  - name: Check if nginx_proxy jail can be stopped
+    iocage: state=stopped tag=nginx_proxy
+  - name: Check if nginx_proxy jail can be started again
+    iocage: state=started tag=nginx_proxy
+  - name: Check if base jail can be created
+    iocage: state=basejail tag=basejail_10.2-BETA1
+  - name: Check if foobar jail can be templated
+    iocage: state=template clone_from=basejail_10.2-BETA1 tag=foobar
+  - name: Check if foobar jail can be destroyed
+    iocage: state=absent tag=foobar
+  - name: Check if foo jail can be cloned
+    iocage: state=cloned clone_from=basejail_10.2-BETA1 tag=foo
+  - name: Check if foobar jail can be started
+    iocage: state=started tag=foo
+  - name: Check if exec works in foobar jail
+    iocage: state=exec tag=foo cmd="/bin/ls -la /root"
+  - name: Check if foo jail can be purged
+    iocage: state=absent tag=foo
