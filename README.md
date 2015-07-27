@@ -32,5 +32,9 @@ iocage: state=restarted uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
 ```
 execute command in (running) jail:
 ```
-iocage state=exec uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" cmd="service sshd start"
+iocage: state=exec uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" cmd="service sshd start"
+```
+force destroy jail:
+```
+iocage: state=absent uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
 ```
