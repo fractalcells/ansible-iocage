@@ -1,0 +1,350 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright 2015, Perceivon Hosting Inc.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY [COPYRIGHT HOLDER] AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL [COPYRIGHT HOLDER] OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import sys
+
+DOCUMENTATION = """
+---
+module: 
+version_added:
+short_description: FreeBSD iocage jail handling
+description:
+    - The M(iocage) module allows several iocage commands to be executed through ansible.
+    - document use-cases here
+options:
+    state:
+      description:
+          - state of the desired result
+      choices: ['basejail', 'template', 'cloned', 'started', 'stopped', 'restarted', 'exec', 'exists', 'absent']
+      required: true
+      default: exec
+    tag:
+      description:
+          - tag of the new jail
+      required: false
+    uuid:
+      description:
+          - uuid of the jail
+      required: false
+author: xmj
+"""
+
+EXAMPLES = """
+# create basejail:
+- iocage: state=basejail tag="foo"
+
+# create template:
+- iocage: state=template tag="foo" clone_from="basejail_10.2-BETA1" properties="ip4_addr='lo1|10.1.0.5' boot=on allow_sysvipc=1 pkglist=/path/to/pkglist.txt defaultrouter='10.1.0.1'
+
+# clone existing jail:
+- iocage: state=cloned tag="foo" clone_from="05a32718-2de2-11e5-ad68-a710c4a2a00f" properties="ip4_addr='lo1|10.1.0.5' boot=on allow_sysvipc=1 pkglist=/path/to/pkglist.txt defaultrouter='10.1.0.1'
+
+# start existing jail:
+- iocage: state=started uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" 
+
+# stop existing jail:
+- iocage: state=stopped uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" 
+
+# restart existing jail:
+- iocage: state=restarted uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" 
+
+# execute command in (running) jail:
+- iocage state=exec uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" cmd="service sshd start"
+
+# force destroy jail
+- iocage state=absent uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+"""
+
+def _jail_started(module, iocage_path='/usr/local/sbin/iocage', argument=None, assume_stopped=False):
+    cmd = "/bin/sh -c \"%s list | awk '/%s/ {print $4}'\"" %(iocage_path, argument)
+    rc, state, err = module.run_command(cmd)
+
+    if state.strip() == 'up' and assume_stopped:
+        module.fail_json(msg="Jail {0} is already running.".format(argument))
+    #if state.strip() == 'down' and assume_stopped==False:
+    #    module.fail_json(msg="Jail {0} is not running.".format(argument))
+
+    #module.fail_json(msg="Jail {0} is {1}\n{2}".format(argument, state,cmd))
+    _msg = "Jail {0} running : '{1}'".format(argument, argument)
+    if state.strip() == 'up':
+        return True
+    return False
+
+def jail_exists(module, iocage_path='/usr/local/sbin/iocage', argument=None, assume_absent=False):
+    cmd = "/bin/sh -c \"%s list | awk '/%s/ {print $2}'\"" %(iocage_path, argument)
+    rc, uuid, err = module.run_command(cmd)
+    if not uuid and not assume_absent:
+        module.fail_json(msg="Jail {0} does not exist.".format(argument))
+
+    if uuid and assume_absent:
+        module.fail_json(msg="Jail {0} already exists. {1}".format(argument, assume_absent))
+
+    _msg = "Jail {0} exists with uuid: {1}".format(argument, uuid)
+    return uuid.strip(), False, _msg
+
+def jail_start(module, iocage_path='/usr/local/sbin/iocage', argument=None):
+    uuid, _, _ = jail_exists(module, iocage_path, argument, False)
+    cmd = "%s start %s" % (iocage_path, uuid)
+    _changed = False
+    rc = 1
+    out = ""
+    _msg = ""
+    if not module.check_mode:
+        #variable = _jail_started(module, iocage_path, argument, True)
+        #module.fail_json(msg="Jail {0}:\n{1}".format(argument, variable))
+        if not _jail_started(module, iocage_path, uuid):
+            rc, out, err = module.run_command(cmd)
+            if not rc == 0:
+                module.fail_json(msg="Jail {0} could not be started.\nstdout:\n{1}\nstderr:\n{2}".format(uuid, out, err))
+            _msg = "Jail {0} was started.".format(uuid)
+            _changed = True
+        else:
+            _msg = "Jail {0} is already running.".format(uuid)
+            _changed = False
+
+    uuid, _, _ = jail_exists(module, iocage_path, uuid, False)
+    return uuid, _changed, _msg
+
+def jail_restart(module, iocage_path='/usr/local/sbin/iocage', argument=None):
+    uuid, _, _ = jail_exists(module, iocage_path, argument, False)
+    cmd = "%s restart %s" % (iocage_path, uuid)
+    _changed = False
+    rc = 1
+    out = ""
+    _msg = ""
+    if not module.check_mode:
+        rc, out, err = module.run_command(cmd)
+        if not rc == 0:
+            module.fail_json(msg="Jail {0} could not be restarted.\nstdout:\n{1}\nstderr:\n{2|".format(uuid, out, err))
+        _changed = True
+        _msg = "Jail {0} was restarted.".format(argument)
+
+    return uuid, _changed, _msg
+
+def jail_stop(module, iocage_path='/usr/local/sbin/iocage', argument=None):
+    uuid, _, _ = jail_exists(module, iocage_path, argument, False)
+    cmd = "{0} stop {1}".format(iocage_path, uuid)
+    _changed = False
+    rc = 1
+    out = ""
+    _msg = ""
+    if not module.check_mode:
+        #variable = _jail_started(module, iocage_path, argument, True)
+        #module.fail_json(msg="Jail {0}:\n{1}".format(argument, variable))
+        if _jail_started(module, iocage_path, uuid, False):
+            rc, out, err = module.run_command(cmd)
+            if not rc == 0:
+                module.fail_json(msg="Jail {0} could not be stopped.\nstdout:\n{1}\nstderr:\n{2}".format(uuid, out, err))
+            _msg = "Jail {0} was stopped.".format(uuid)
+            _changed = True
+        else:
+            _msg = "Jail {0} is already stopped.".format(uuid)
+            _changed = False
+
+    return uuid, _changed, _msg
+
+def jail_exec(module, iocage_path='/usr/local/sbin/iocage', argument=None, cmd='/usr/bin/true'):
+    uuid, _, _ = jail_exists(module, iocage_path, argument, False)
+    _changed = False
+    rc = 1
+    out = ""
+    _msg = ""
+    if not module.check_mode:
+        #variable = _jail_started(module, iocage_path, argument, False)
+        #module.fail_json(msg="Jail {0}:\n{1}".format(argument, variable))
+        if _jail_started(module, iocage_path, uuid, False):
+            rc, out, err = module.run_command("{0} exec {1} {2}".format(iocage_path, uuid, cmd))
+
+            if not rc == 0:
+                module.fail_json(msg="Command '{0}' could not be executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, uuid, out, err))
+
+            _changed = True
+            _msg = "Command '{0}' was executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, uuid, out, err)
+
+
+    return uuid, _changed, _msg
+
+def jail_set(module, iocage_path='/usr/local/sbin/iocage', uuid=None, properties=''):
+    _changed = False
+    cmd = ""
+    for property in properties.split(" "):
+	key, value = property.split('=') 
+        # XXX: maybe a little inconsistent
+        cmd += "{0} set {1}=\"{2}\" {3} ; ".format(iocage_path, key, value, uuid) 
+    # execute cmd
+    if not module.check_mode:
+        rc, out, err = module.run_command('/bin/sh -c "%s"' % cmd)
+
+    if not rc == 0:
+        module.fail_json(msg="Attributes could not be set on jail '{0}'.\nstdout:\n{1}\nstderr:\n{2}".format(uuid, out, err))
+
+    _changed = True
+    _msg = "Attributes were set on jail '{0}'.".format(uuid)
+    return uuid, _changed, _msg
+
+def jail_create_basejail(module, iocage_path='/usr/local/sbin/iocage', tag=None):
+    # execute: 
+    cmd = "{0} create -b tag={1}".format(iocage_path, tag)
+    _changed = False
+    rc = 1
+    out = ""
+    _msg = ""
+    if not module.check_mode:
+        rc, out, err = module.run_command(cmd)
+        if not rc == 0:
+            module.fail_json(msg="Basejail {0} could not be created.\nstdout:\n{1}\nstderr:\n{2}".format(tag, out, err))
+        _changed = True
+        _msg = "Basejail {0} was created.".format(tag)
+    uuid, _, _ = jail_exists(module, iocage_path, tag, False)
+    return uuid, _changed, _msg
+    
+def jail_create_clone(module, iocage_path='/usr/local/sbin/iocage', clone_from_uuid=None, tag=None, properties=""):
+    _changed = False
+    if not module.check_mode:
+        rc, out, err = module.run_command("{0} clone {1} tag={2} {3}".format(iocage_path, clone_from_uuid, tag, properties))
+
+    if not rc == 0:
+        module.fail_json(msg="Jail '{0}' could not be cloned from '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(tag, clone_from_uuid, out, err))
+
+    _changed = True
+    _msg = "Jail '{0}' was cloned from '{1}'.".format(tag, clone_from_uuid)
+    uuid, _, _ = jail_exists(module, iocage_path, tag, False)
+    return uuid.strip(), _changed, _msg
+
+def jail_destroy(module, iocage_path='/usr/local/sbin/iocage', argument=None):
+    # XXX: enable once there's an `iocage get uuid <jailname`
+    #uuid, _, _ = jail_exists(module, iocage_path, argument, False)
+    _changed = False
+    rc = 1
+    out = ""
+    _msg = ""
+    if not module.check_mode:
+        rc, out, err = module.run_command("{0} destroy -f {1}".format(iocage_path, argument))
+        if not rc == 0:
+            module.fail_json(msg="Jail '{0}' could not be destroyed.\nstdout:\n{1}\nstderr:\n{2}".format(tag, out, err))
+
+        _changed = True
+        _msg = "Jail '{0}' was destroyed.".format(argument)
+        jail_exists(module, iocage_path, argument, True)
+    return None, _changed, _msg
+
+def main():
+    module = AnsibleModule(
+            argument_spec    = dict(
+                state        = dict(default="exec", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "exec", "exists", "absent"], required=False),
+                uuid         = dict(default="", required=False),
+                tag          = dict(default="", required=False),
+                properties   = dict(default="", required=False),
+                cmd          = dict(default="", required=False),
+                clone_from   = dict(default="", required=False)),
+    )
+
+    iocage_path = module.get_bin_path('iocage', True)
+
+    p = module.params
+
+    uuid = p["uuid"]
+    tag = p["tag"]
+    properties = p["properties"]
+    cmd = p["cmd"]
+    clone_from= p["clone_from"]
+
+    jail_identifier = (uuid or tag)
+
+    msgs = []
+    changed = False
+
+    if p["state"] == "started":
+        #impl
+        jail_exists(module, iocage_path, jail_identifier, False)
+        uuid, changed, _msg = jail_start(module, iocage_path, jail_identifier)
+        msgs.append(_msg)
+
+    elif p["state"] == "stopped":
+        #impl
+        jail_exists(module, iocage_path,  jail_identifier, False)
+        uuid, changed, _msg = jail_stop(module, iocage_path, jail_identifier)
+        msgs.append(_msg)
+
+    elif p["state"] == "restarted":
+        #impl
+        jail_exists(module, iocage_path,  jail_identifier, False)
+        uuid, changed, _msg = jail_restart(module, iocage_path, jail_identifier)
+        msgs.append(_msg)
+
+    elif p["state"] == "exists":
+        #impl
+        uuid, _, _ = jail_exists(module, iocage_path,  jail_identifier, False)
+
+    elif p["state"] == "basejail":
+        # impl
+        uuid, _, _ = jail_exists(module, iocage_path, (tag))
+        if not uuid:
+            uuid, changed, _msg = jail_create_basejail(module, iocage_path,  tag)
+            msgs.append(_msg)
+
+    elif p["state"] == "template":
+        # TODO: factor logic out into its own function
+        # impl
+        clone_from_uuid, _, _ = jail_exists(module, iocage_path,  (uuid or clone_from))
+        #tag_uuid, _, _ = jail_exists(module, iocage_path, tag, assume_absent=True)
+        #if not tag_uuid:
+
+        uuid, changed, _msg = jail_create_clone(module, iocage_path,  clone_from_uuid, tag, properties)
+        msgs.append(_msg)
+        if not changed:
+            module.fail_json(msg="Jail '{0}' could not be cloned: {1}".format(tag, uuid))
+        _, changed, _msg = jail_set(module, iocage_path, uuid, 'template=yes')
+        msgs.append(_msg)
+        if not changed:
+            module.fail_json(msg="Jail '{0}' could not be set as template: {1}".format(tag, uuid))
+
+    elif p["state"] == "cloned":
+        # impl
+        clone_from_uuid, _, _ = jail_exists(module, iocage_path, (uuid or clone_from))
+        tag_uuid, _, _ = jail_exists(module, iocage_path, tag, assume_absent=True)
+        if not tag_uuid:
+            uuid, changed, _msg = jail_create_clone(module, iocage_path, clone_from_uuid, tag, properties)
+            msgs.append(_msg)
+
+    elif p["state"] == "exec":
+        uuid, _, _ = jail_exists(module, iocage_path, (uuid or tag))
+        uuid, _changed, _msg = jail_exec(module, iocage_path, uuid, cmd)
+        msgs.append(_msg)
+
+    elif p["state"] == "absent":
+        # TODO: enable once `iocage get` receives uuid
+        #uuid, _, _ = jail_exists(module, iocage_path, (uuid or tag))
+        #if uuid:
+        uuid, _changed, _msg = jail_destroy(module, iocage_path, (uuid or tag))
+        msgs.append(_msg)
+
+    module.exit_json(changed=changed, msg=", ".join(msgs))
+
+# import module snippets
+from ansible.module_utils.basic import *
+
+main()
