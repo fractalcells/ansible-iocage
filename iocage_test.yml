@@ -2,21 +2,16 @@
   sudo: true
   tasks:
   - name: Check if basejail exists
-    iocage: state=exists tag=basejail_10.1-RELEASE
-  - name: Check if nginx_proxy jail can be started
-    iocage: state=started tag=nginx_proxy
-  - name: Check if nginx_proxy jail can be restarted
-    iocage: state=restarted tag=nginx_proxy
-  - name: Check if nginx_proxy jail can be stopped
-    iocage: state=stopped tag=nginx_proxy
-  - name: Check if nginx_proxy jail can be started again
-    iocage: state=started tag=nginx_proxy
+    iocage: state=exists tag=test_basejail_10.1-RELEASE
+
   - name: Check if base jail can be created
-    iocage: state=basejail tag=basejail_10.2-BETA1
-  - name: Check if foobar jail can be templated
-    iocage: state=template clone_from=basejail_10.2-BETA1 tag=foobar
-  - name: Check if foobar jail can be destroyed
-    iocage: state=absent tag=foobar
+    iocage: state=basejail tag=test_basejail_10.1-RELEASE
+# check if templating works
+  - name: Check if template_test_jail jail can be templated
+    iocage: state=template clone_from=test_basejail_10.1-RELEASE tag=template_test_jail
+  - name: Check if template_test_jail jail can be destroyed
+    iocage: state=absent tag=template_test_jail
+# check with an absent jail. should produce lots of ignored errors.
   - name: Check if absent jail can't be destroyed
     iocage: state=absent tag=absent
     ignore_errors: yes
@@ -29,11 +24,21 @@
   - name: Check if absent jail can be started
     iocage: state=started tag=absent
     ignore_errors: yes
-  - name: Check if foo jail can be cloned
-    iocage: state=cloned clone_from=basejail_10.2-BETA1 tag=foo
-  - name: Check if foobar jail can be started
-    iocage: state=started tag=foo
-  - name: Check if exec works in foobar jail
-    iocage: state=exec tag=foo cmd="/bin/ls -la /root"
-  - name: Check if foo jail can be destroyed
-    iocage: state=absent tag=foo
+
+# check everything
+  - name: Check if test jail can be cloned
+    iocage: state=cloned clone_from=basejail_10.2-BETA1 tag=test_jail
+  - name: Check if test jail can be started
+    iocage: state=started tag=test_jail
+  - name: Check if test jail that's started -- is started
+    iocage: state=started tag=test_jail
+  - name: Check if exec works in test jail
+    iocage: state=exec tag=test_jail cmd="/bin/ls -la /root"
+  - name: Check if test jail can be restarted
+    iocage: state=restarted tag=test_jail
+  - name: Check if test jail can be stopped
+    iocage: state=stopped tag=test_jail
+  - name: Check if test jail can be started again
+    iocage: state=started tag=test_jail
+  - name: Check if test jail can be destroyed
+    iocage: state=absent tag=test_jail
