@@ -79,7 +79,7 @@ EXAMPLES = """
 """
 
 def _jail_started(module, iocage_path='/usr/local/sbin/iocage', argument=None, assume_stopped=False):
-    cmd = "%s get status %s" % (iocage_path, argument)
+    cmd = "%s get state %s" % (iocage_path, argument)
     rc, state, err = module.run_command(cmd)
 
     if state.strip() == 'up' and assume_stopped:
@@ -96,7 +96,8 @@ def jail_exists(module, iocage_path='/usr/local/sbin/iocage', argument=None, ass
 
     if uuid and assume_absent:
         module.fail_json(msg="Jail {0} already exists.".format(argument))
-
+    if not rc == 0:
+        uuid = "-"
     _msg = "Jail {0} exists with uuid: {1}".format(argument, uuid)
     return uuid.strip(), False, _msg
 
@@ -109,13 +110,13 @@ def jail_start(module, iocage_path='/usr/local/sbin/iocage', argument=None):
     _msg = ""
     if not module.check_mode:
 	_started = _jail_started(module, iocage_path, uuid, False)
-        if not _started and uuid:
+        if not _started and not uuid == "-":
             rc, out, err = module.run_command(cmd)
             if not rc == 0:
                 module.fail_json(msg="Jail {0} could not be started.\nstdout:\n{1}\nstderr:\n{2}".format(uuid, out, err))
             _msg = "Jail {0} was started.\n{1}".format(uuid,out)
             _changed = True
-        elif not _started and not uuid:
+        elif not _started and uuid == "-":
             module.fail_json(msg="Jail '{0}' does not exist.".format(argument, uuid))
         elif _started:
             _msg = "Jail {0} is already running.".format(uuid)
@@ -132,7 +133,7 @@ def jail_restart(module, iocage_path='/usr/local/sbin/iocage', argument=None):
     out = ""
     _msg = ""
     if not module.check_mode:
-        if uuid:
+        if not uuid == "-":
             rc, out, err = module.run_command(cmd)
             if not rc == 0:
                 module.fail_json(msg="Jail {0} could not be restarted.\nstdout:\n{1}\nstderr:\n{2}".format(uuid, out, err))
@@ -207,8 +208,9 @@ def jail_set(module, iocage_path='/usr/local/sbin/iocage', uuid=None, properties
         _msg = "Attributes were set on jail '{0}'.".format(uuid)
     return uuid, _changed, _msg
 
-def jail_create_basejail(module, iocage_path='/usr/local/sbin/iocage', tag=None):
-    cmd = "{0} create -b tag={1}".format(iocage_path, tag)
+def jail_create_basejail(module, iocage_path='/usr/local/sbin/iocage', tag=None, base="10.2-RELEASE"):
+    cmd = "{0} create tag={1} base={2}".format(iocage_path, tag, base)
+    #module.fail_json(msg="{0}".format(cmd))
     _changed = False
     rc = 1
     out = ""
@@ -245,10 +247,10 @@ def jail_destroy(module, iocage_path='/usr/local/sbin/iocage', argument=None):
     out = ""
     _msg = ""
     if not module.check_mode:
-        if uuid:
+        if not uuid == "-":
             rc, out, err = module.run_command("{0} destroy -f {1}".format(iocage_path, argument))
             if not rc == 0:
-                module.fail_json(msg="Jail '{0}' could not be destroyed.\nstdout:\n{1}\nstderr:\n{2}".format(tag, out, err))
+                module.fail_json(msg="Jail '{0}' could not be destroyed.\nstdout:\n{1}\nstderr:\n{2}".format(argument, out, err))
 
             _changed = True
             _msg = "Jail '{0}' was destroyed.".format(argument)
@@ -267,7 +269,8 @@ def main():
                 properties   = dict(default="", required=False),
                 user         = dict(default="", required=False),
                 cmd          = dict(default="", required=False),
-                clone_from   = dict(default="", required=False)),
+                clone_from   = dict(default="", required=False),
+                base         = dict(default="", required=False)),
     )
 
     iocage_path = module.get_bin_path('iocage', True)
@@ -280,6 +283,7 @@ def main():
     cmd = p["cmd"]
     clone_from= p["clone_from"]
     user= p["user"] or "root"
+    base = p["base"]
 
     jail_identifier = (uuid or tag)
 
@@ -307,8 +311,8 @@ def main():
 
     elif p["state"] == "basejail":
         uuid, _, _ = jail_exists(module, iocage_path, (tag))
-        if not uuid:
-            uuid, changed, _msg = jail_create_basejail(module, iocage_path,  tag)
+        if uuid == "-":
+            uuid, changed, _msg = jail_create_basejail(module, iocage_path,  tag, base)
             msgs.append(_msg)
 
     elif p["state"] == "set":
@@ -318,7 +322,7 @@ def main():
     elif p["state"] == "template":
         clone_from_uuid, _, _ = jail_exists(module, iocage_path,  (uuid or clone_from))
         tag_uuid, _, _ = jail_exists(module, iocage_path, tag)
-        if not tag_uuid:
+        if not tag_uuid or tag_uuid == "-":
             uuid, changed, _msg = jail_create_clone(module, iocage_path,  clone_from_uuid, tag, properties)
             msgs.append(_msg)
             if not changed:
@@ -333,7 +337,7 @@ def main():
     elif p["state"] == "cloned":
         clone_from_uuid, _, _ = jail_exists(module, iocage_path, (uuid or clone_from))
         tag_uuid, _, _ = jail_exists(module, iocage_path, tag)
-        if not tag_uuid:
+        if not tag_uuid or tag_uuid == "-":
             uuid, changed, _msg = jail_create_clone(module, iocage_path, clone_from_uuid, tag, properties)
             msgs.append(_msg)
 	else:
