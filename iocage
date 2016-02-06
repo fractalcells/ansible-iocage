@@ -38,7 +38,7 @@ options:
     state:
       description:
           - state of the desired result
-      choices: ['basejail', 'template', 'cloned', 'started', 'stopped', 'restarted', 'exec', 'exists', 'absent', 'set']
+      choices: ['basejail', 'template', 'cloned', 'started', 'stopped', 'restarted', 'fetched', 'exec', 'exists', 'absent', 'set']
       required: true
       default: exec
     tag:
@@ -125,6 +125,37 @@ def jail_start(module, iocage_path='/usr/local/sbin/iocage', argument=None):
     uuid, _, _ = jail_exists(module, iocage_path, uuid, False)
     return uuid, _changed, _msg
 
+def _release_exists(module, iocage_path='/usr/local/sbin/iocage', release="10.2-RELEASE"):
+    release_path = "/iocage/releases/%s/root"
+    cmd = "%s list -r | grep %s" % (iocage_path, release)
+    rc = 1
+    rc, out, err = module.run_command(cmd)
+    if not rc == 0:
+        return False
+    return True
+
+def release_fetch(module, iocage_path='/usr/local/sbin/iocage', release="10.2-RELEASE", update=False):
+    _exists = _release_exists(module, iocage_path, release)
+    _changed = False
+
+    if _exists and not update:
+        _msg =  False, "Release %s already present." % release
+    else:
+        if not module.check_mode:
+            cmd = "%s fetch release=%s" % (iocage_path, release)
+            rc = 1
+            rc, out, err = module.run_command(cmd)
+            if not rc == 0:
+                module.fail_json(msg="Release {0} could not be fetched.\nstdout:\n{1}\nstderr:\n{2}".format(release, out, err))
+            _changed = True
+            if _exists and update:
+                 _msg = "Release {0} was successfully updated."
+            elif not _exists:
+                 _msg = "Release {0} was successfully fetched."
+
+    return _changed, _msg
+
+
 def jail_restart(module, iocage_path='/usr/local/sbin/iocage', argument=None):
     uuid, _, _ = jail_exists(module, iocage_path, argument, False)
     cmd = "%s restart %s" % (iocage_path, uuid)
@@ -208,8 +239,8 @@ def jail_set(module, iocage_path='/usr/local/sbin/iocage', uuid=None, properties
         _msg = "Attributes were set on jail '{0}'.".format(uuid)
     return uuid, _changed, _msg
 
-def jail_create_basejail(module, iocage_path='/usr/local/sbin/iocage', tag=None, base="10.2-RELEASE"):
-    cmd = "{0} create tag={1} base={2}".format(iocage_path, tag, base)
+def jail_create_basejail(module, iocage_path='/usr/local/sbin/iocage', tag=None, release="10.2-RELEASE"):
+    cmd = "{0} create tag={1} release={2}".format(iocage_path, tag, release)
     #module.fail_json(msg="{0}".format(cmd))
     _changed = False
     rc = 1
@@ -263,14 +294,15 @@ def jail_destroy(module, iocage_path='/usr/local/sbin/iocage', argument=None):
 def main():
     module = AnsibleModule(
             argument_spec    = dict(
-                state        = dict(default="exec", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "exec", "exists", "absent", "set"], required=False),
+                state        = dict(default="exec", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "fetched", "exec", "exists", "absent", "set"], required=False),
                 uuid         = dict(default="", required=False),
                 tag          = dict(default="", required=False),
                 properties   = dict(default="", required=False),
                 user         = dict(default="", required=False),
                 cmd          = dict(default="", required=False),
                 clone_from   = dict(default="", required=False),
-                base         = dict(default="", required=False)),
+                release      = dict(default="", required=False),
+                update       = dict(default="", required=False)),
     )
 
     iocage_path = module.get_bin_path('iocage', True)
@@ -282,8 +314,9 @@ def main():
     properties = p["properties"]
     cmd = p["cmd"]
     clone_from= p["clone_from"]
-    user= p["user"] or "root"
-    base = p["base"]
+    user = p["user"] or "root"
+    release = p["release"]
+    update = p["update"]
 
     jail_identifier = (uuid or tag)
 
@@ -312,8 +345,11 @@ def main():
     elif p["state"] == "basejail":
         uuid, _, _ = jail_exists(module, iocage_path, (tag))
         if uuid == "-":
-            uuid, changed, _msg = jail_create_basejail(module, iocage_path,  tag, base)
+            uuid, changed, _msg = jail_create_basejail(module, iocage_path,  tag, release)
             msgs.append(_msg)
+
+    elif p["state"] == "fetched":
+	changed, _msg = release_fetch(module, iocage_path, release, update)
 
     elif p["state"] == "set":
         uuid, _, _ = jail_exists(module, iocage_path, tag, False)

@@ -1,17 +1,25 @@
 - hosts: default
   sudo: true
   tasks:
+  - name: Check if release 10.2-RELEASE exists
+    iocage: state=fetched release=10.2-RELEASE
+    #ignore_errors: true
+
   - name: Check if basejail exists
     iocage: state=exists tag=test_basejail_10.2-RELEASE
     ignore_errors: true
 
   - name: Check if base jail can be created
-    iocage: state=basejail tag=test_basejail_10.2-RELEASE base=10.2-RELEASE
-# check if templating works
-  - name: Check if base jail can be converted
-    iocage: state=set tag=test_basejail_10.2-RELEASE properties="template=yes"
+    iocage: state=basejail tag=test_basejail_10.2-RELEASE release=10.2-RELEASE
+# Basejails can't be made templates
+  - name: Verify that base jail cannot be converted
+    iocage: state=set tag=test_basejail_10.2-RELEASE properties="istemplate=yes"
+    ignore_errors: true
   - name: Check if clone can be had
     iocage: state=cloned tag=test_jail clone_from=test_basejail_10.2-RELEASE
+  - name: Verify that base jail cannot be converted
+    iocage: state=set tag=test_jail properties="istemplate=yes"
+    ignore_errors: true
   - name: Check if cloned test jail can be destroyed
     iocage: state=absent tag=test_jail
 # check with an absent jail. should produce lots of ignored errors.
