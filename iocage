@@ -139,7 +139,7 @@ def release_fetch(module, iocage_path='/usr/local/sbin/iocage', release="10.2-RE
     _changed = False
 
     if _exists and not update:
-        _msg =  False, "Release %s already present." % release
+        _msg =  "Release %s already present." % release
     else:
         if not module.check_mode:
             cmd = "%s fetch release=%s" % (iocage_path, release)
@@ -204,10 +204,11 @@ def jail_exec(module, iocage_path='/usr/local/sbin/iocage', argument=None, user=
     _changed = False
     rc = 1
     out = ""
+    err = ""
     _msg = ""
     if not module.check_mode:
         if _jail_started(module, iocage_path, uuid, False):
-            rc, out, err = module.run_command("{0} exec -u {1} {2} {3}".format(iocage_path, user, uuid, cmd))
+            rc, out, err = module.run_command("{0} exec -U {1} {2} {3}".format(iocage_path, user, uuid, cmd))
 
             if not rc == 0:
                 module.fail_json(msg="Command '{0}' could not be executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, uuid, out, err))
@@ -216,7 +217,7 @@ def jail_exec(module, iocage_path='/usr/local/sbin/iocage', argument=None, user=
             _msg = "Command '{0}' was executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, uuid, out, err)
 
 
-    return uuid, _changed, _msg
+    return uuid, _changed, _msg, out, err
 
 def jail_set(module, iocage_path='/usr/local/sbin/iocage', uuid=None, properties=''):
     uuid, _, _ = jail_exists(module, iocage_path, uuid, False)
@@ -296,6 +297,8 @@ def main():
             argument_spec    = dict(
                 state        = dict(default="exec", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "fetched", "exec", "exists", "absent", "set"], required=False),
                 uuid         = dict(default="", required=False),
+                stdout         = dict(default="", required=False),
+                stderr         = dict(default="", required=False),
                 tag          = dict(default="", required=False),
                 properties   = dict(default="", required=False),
                 user         = dict(default="", required=False),
@@ -322,6 +325,8 @@ def main():
 
     msgs = []
     changed = False
+    out = ""
+    err = ""
 
     if p["state"] == "started":
         jail_exists(module, iocage_path, jail_identifier, False)
@@ -350,6 +355,7 @@ def main():
 
     elif p["state"] == "fetched":
 	changed, _msg = release_fetch(module, iocage_path, release, update)
+        msgs.append(_msg)
 
     elif p["state"] == "set":
         uuid, _, _ = jail_exists(module, iocage_path, tag, False)
@@ -381,7 +387,7 @@ def main():
 
     elif p["state"] == "exec":
         uuid, _, _ = jail_exists(module, iocage_path, (uuid or tag))
-        uuid, changed, _msg = jail_exec(module, iocage_path, uuid, user, cmd)
+        uuid, changed, _msg, out, err = jail_exec(module, iocage_path, uuid, user, cmd)
         msgs.append(_msg)
 
     elif p["state"] == "absent":
@@ -389,7 +395,7 @@ def main():
         msgs.append(_msg)
 
     uuid = uuid or "-"
-    module.exit_json(changed=changed, msg=", ".join(msgs), uuid=uuid)
+    module.exit_json(changed=changed, msg=", ".join(msgs), uuid=uuid, stdout=out, stderr=err)
 
 # import module snippets
 from ansible.module_utils.basic import *

@@ -3,7 +3,6 @@
   tasks:
   - name: Check if release 10.2-RELEASE exists
     iocage: state=fetched release=10.2-RELEASE
-    #ignore_errors: true
 
   - name: Check if basejail exists
     iocage: state=exists tag=test_basejail_10.2-RELEASE
