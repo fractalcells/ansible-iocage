@@ -129,7 +129,7 @@ def _release_exists(module, iocage_path='/usr/local/sbin/iocage', release="10.2-
     release_path = "/iocage/releases/%s/root"
     cmd = "%s list -r | grep %s" % (iocage_path, release)
     rc = 1
-    rc, out, err = module.run_command(cmd)
+    rc, out, err = module.run_command('/bin/sh -c "%s"' % cmd)
     if not rc == 0:
         return False
     return True
