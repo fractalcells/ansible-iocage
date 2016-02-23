@@ -38,12 +38,17 @@
 # check everything
   - name: Check if test jail can be cloned
     iocage: state=cloned clone_from=test_basejail_10.2-RELEASE tag=test_jail
+  - name: Check if pkg info does not work in not-started test jail
+    iocage: state=pkg tag=test_jail cmd="info"
+    ignore_errors: yes
   - name: Check if test jail can be started
     iocage: state=started tag=test_jail
   - name: Check if test jail that's started -- is started
     iocage: state=started tag=test_jail
   - name: Check if exec works in test jail
     iocage: state=exec tag=test_jail cmd="/bin/ls -la /root"
+  - name: Check if pkg info works in test jail
+    iocage: state=pkg tag=test_jail cmd="info"
   - name: Check if test jail can be restarted
     iocage: state=restarted tag=test_jail
   - name: Check if test jail can be stopped

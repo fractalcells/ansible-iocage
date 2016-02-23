@@ -38,7 +38,7 @@ options:
     state:
       description:
           - state of the desired result
-      choices: ['basejail', 'template', 'cloned', 'started', 'stopped', 'restarted', 'fetched', 'exec', 'exists', 'absent', 'set']
+      choices: ['basejail', 'template', 'cloned', 'started', 'stopped', 'restarted', 'fetched', 'exec', 'pkg', 'exists', 'absent', 'set']
       required: true
       default: exec
     tag:
@@ -73,6 +73,9 @@ EXAMPLES = """
 
 # execute command in (running) jail:
 - iocage state=exec uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" cmd="service sshd start"
+
+# execute pkg command in (running) jail:
+- iocage state=pkg uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" cmd="service sshd start"
 
 # force destroy jail
 - iocage state=absent uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
@@ -199,8 +202,7 @@ def jail_stop(module, iocage_path='/usr/local/sbin/iocage', argument=None):
 
     return uuid, _changed, _msg
 
-def jail_exec(module, iocage_path='/usr/local/sbin/iocage', argument=None, user="root", cmd='/usr/bin/true'):
-    uuid, _, _ = jail_exists(module, iocage_path, argument, False)
+def jail_exec(module, iocage_path='/usr/local/sbin/iocage', uuid=None, user="root", cmd='/usr/bin/true'):
     _changed = False
     rc = 1
     out = ""
@@ -215,7 +217,28 @@ def jail_exec(module, iocage_path='/usr/local/sbin/iocage', argument=None, user=
 
             _changed = True
             _msg = "Command '{0}' was executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, uuid, out, err)
+        else:
+            module.fail_json(msg="Jail '{0}' is not running.".format(uuid))
 
+    return uuid, _changed, _msg, out, err
+
+def jail_pkg(module, iocage_path='/usr/local/sbin/iocage', uuid=None, cmd='info'):
+    _changed = False
+    rc = 1
+    out = ""
+    err = ""
+    _msg = ""
+    if not module.check_mode:
+        if _jail_started(module, iocage_path, uuid, False):
+            rc, out, err = module.run_command("{0} pkg {1} {2}".format(iocage_path, uuid, cmd))
+
+            if not rc == 0:
+                module.fail_json(msg="pkg '{0}' could not be executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, uuid, out, err))
+
+            _changed = True
+            _msg = "pkg '{0}' was executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, uuid, out, err)
+        else:
+            module.fail_json(msg="Jail '{0}' is not running.".format(uuid ))
 
     return uuid, _changed, _msg, out, err
 
@@ -295,7 +318,7 @@ def jail_destroy(module, iocage_path='/usr/local/sbin/iocage', argument=None):
 def main():
     module = AnsibleModule(
             argument_spec    = dict(
-                state        = dict(default="exec", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "fetched", "exec", "exists", "absent", "set"], required=False),
+                state        = dict(default="exec", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "fetched", "exec", "pkg", "exists", "absent", "set"], required=False),
                 uuid         = dict(default="", required=False),
                 stdout         = dict(default="", required=False),
                 stderr         = dict(default="", required=False),
@@ -329,18 +352,18 @@ def main():
     err = ""
 
     if p["state"] == "started":
-        jail_exists(module, iocage_path, jail_identifier, False)
-        uuid, changed, _msg = jail_start(module, iocage_path, jail_identifier)
+        uuid, _, _ = jail_exists(module, iocage_path, jail_identifier, False)
+        uuid, changed, _msg = jail_start(module, iocage_path, uuid)
         msgs.append(_msg)
 
     elif p["state"] == "stopped":
-        jail_exists(module, iocage_path,  jail_identifier, False)
-        uuid, changed, _msg = jail_stop(module, iocage_path, jail_identifier)
+        uuid, _, _ = jail_exists(module, iocage_path,  jail_identifier, False)
+        uuid, changed, _msg = jail_stop(module, iocage_path, uuid)
         msgs.append(_msg)
 
     elif p["state"] == "restarted":
-        jail_exists(module, iocage_path,  jail_identifier, False)
-        uuid, changed, _msg = jail_restart(module, iocage_path, jail_identifier)
+        uuid, _, _ = jail_exists(module, iocage_path,  jail_identifier, False)
+        uuid, changed, _msg = jail_restart(module, iocage_path, uuid)
         msgs.append(_msg)
 
     elif p["state"] == "exists":
@@ -348,7 +371,7 @@ def main():
         msgs.append(_msg)
 
     elif p["state"] == "basejail":
-        uuid, _, _ = jail_exists(module, iocage_path, (tag))
+        uuid, _, _ = jail_exists(module, iocage_path, tag)
         if uuid == "-":
             uuid, changed, _msg = jail_create_basejail(module, iocage_path,  tag, release)
             msgs.append(_msg)
@@ -388,6 +411,11 @@ def main():
     elif p["state"] == "exec":
         uuid, _, _ = jail_exists(module, iocage_path, (uuid or tag))
         uuid, changed, _msg, out, err = jail_exec(module, iocage_path, uuid, user, cmd)
+        msgs.append(_msg)
+
+    elif p["state"] == "pkg":
+        uuid, _, _ = jail_exists(module, iocage_path, (uuid or tag))
+        uuid, changed, _msg, out, err = jail_pkg(module, iocage_path, uuid, cmd)
         msgs.append(_msg)
 
     elif p["state"] == "absent":
