@@ -1,5 +1,6 @@
 - hosts: default
-  sudo: true
+  become: true
+  become_method: sudo
   tasks:
   - name: Check if release 10.2-RELEASE exists
     iocage: state=fetched release=10.2-RELEASE
