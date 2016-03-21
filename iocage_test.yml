@@ -11,17 +11,30 @@
 
   - name: Check if base jail can be created
     iocage: state=basejail tag=test_basejail_10.2-RELEASE release=10.2-RELEASE
-# Basejails can't be made templates
-  - name: Verify that base jail cannot be converted
+# Basejails can be made templates
+  - name: Verify that base jail can be converted
     iocage: state=set tag=test_basejail_10.2-RELEASE properties="istemplate=yes"
-    ignore_errors: true
   - name: Check if clone can be had
     iocage: state=cloned tag=test_jail clone_from=test_basejail_10.2-RELEASE
-  - name: Verify that base jail cannot be converted
-    iocage: state=set tag=test_jail properties="istemplate=yes"
-    ignore_errors: true
   - name: Check if cloned test jail can be destroyed
     iocage: state=absent tag=test_jail
+  - name: Verify that base jail can be converted back
+    iocage: state=set tag=test_basejail_10.2-RELEASE properties="istemplate=no"
+# template glue
+  - name: Check if template jail can be created
+    iocage: state=template tag=test_template_10.2-RELEASE release=10.2-RELEASE
+    tags:
+    - debug
+  - name: Check if template jail can't be started
+    iocage: state=started tag=test_template_10.2-RELEASE force=yes
+    ignore_errors: yes
+  - name: Check if template jail can be force-started
+    iocage: state=started tag=test_template_10.2-RELEASE force=yes
+  - name: Check if template jail can be stopped
+    iocage: state=stopped tag=absent
+  - name: Check if template jail can be destroyed
+    iocage: state=absent tag=test_template_10.2-RELEASE
+
 # check with an absent jail. should produce lots of ignored errors.
   - name: Check if absent jail can't be destroyed
     iocage: state=absent tag=absent
