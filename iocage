@@ -83,16 +83,31 @@ EXAMPLES = """
 """
 
 def _jail_started(module, iocage_path='/usr/local/sbin/iocage', argument=None, assume_stopped=False):
-    cmd = "%s get state %s" % (iocage_path, argument)
+    uuid, _, _ = jail_exists(module,iocage_path,argument=None)
+
+    cmd = "%s list" % (iocage_path)
     rc, state, err = module.run_command(cmd)
 
-    if state.strip() == 'up' and assume_stopped:
-        module.fail_json(msg="Jail {0} is already running.".format(argument))
+    if rc != 0:
+        module.fail_json(msg="_jail_started({0}): '{1}' returns '{2}' ({3})".format(argument, cmd, state, err))
 
-    _msg = "Jail {0} running : '{1}'".format(argument, argument)
-    if state.strip() == 'up':
-        return True
-    return False
+    st = None
+
+    for l in state.split('\n'):
+        u = l.split()[1]
+#        module.fail_json(msg="Jail {0} :gne {1}".format(argument, l))
+        if u == uuid:
+            s = l.split()[3]
+            if s == 'up':
+                st = True
+                break
+            elif s == 'down':
+                st = False
+                break
+            else:
+                module.fail_json(msg="Jail {0} unknows state: {1}".format(argument, l))
+
+    return st
 
 def jail_exists(module, iocage_path='/usr/local/sbin/iocage', argument=None, assume_absent=False):
     cmd = "%s get host_hostuuid %s" %(iocage_path, argument)
