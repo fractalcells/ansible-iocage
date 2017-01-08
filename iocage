@@ -113,7 +113,7 @@ def jail_exists(module, iocage_path='/usr/local/sbin/iocage', argument=None, ass
     cmd = "%s get host_hostuuid %s" %(iocage_path, argument)
     rc, uuid, err = module.run_command(cmd)
     _msg = ""
-    if uuid and assume_absent:
+    if uuid != '-' and assume_absent:
         module.fail_json(msg="Jail {0} already exists.".format(argument))
     if not rc == 0:
         uuid = "-"
