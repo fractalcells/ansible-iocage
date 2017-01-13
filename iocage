@@ -39,7 +39,7 @@ options:
     state:
       description:
           - state of the desired result
-      choices: ['basejail', 'template', 'cloned', 'started', 'stopped', 'restarted', 'fetched', 'exec', 'pkg', 'exists', 'absent', 'set']
+      choices: ['basejail', 'template', 'present', 'cloned', 'started', 'stopped', 'restarted', 'fetched', 'exec', 'pkg', 'exists', 'absent', 'set']
       required: true
       default: exec
     tag:
@@ -61,7 +61,10 @@ EXAMPLES = """
 - iocage: state=template tag="foo" clone_from="basejail_10.2-BETA1" properties="ip4_addr='lo1|10.1.0.5' boot=on allow_sysvipc=1 pkglist=/path/to/pkglist.txt defaultrouter='10.1.0.1'
 
 # clone existing jail:
-- iocage: state=cloned tag="foo" clone_from="05a32718-2de2-11e5-ad68-a710c4a2a00f" properties="ip4_addr='lo1|10.1.0.5' boot=on allow_sysvipc=1 pkglist=/path/to/pkglist.txt defaultrouter='10.1.0.1'
+- iocage: state=present tag="foo" clone_from="05a32718-2de2-11e5-ad68-a710c4a2a00f" properties="ip4_addr='lo1|10.1.0.5' boot=on allow_sysvipc=1 pkglist=/path/to/pkglist.txt defaultrouter='10.1.0.1'"
+
+# create jail (without cloning):
+- iocage: state=present tag="foo" properties="ip4_addr='lo1|10.1.0.5' boot=on allow_sysvipc=1 pkglist=/path/to/pkglist.txt defaultrouter='10.1.0.1'"
 
 # start existing jail:
 - iocage: state=started uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
@@ -273,7 +276,7 @@ def jail_set(module, iocage_path='/usr/local/sbin/iocage', argument=None, proper
     _properties = re.split(regexp, properties)[1::3]
     for _property in _properties:
         try:
-	    k, v = _property.split('=')
+            k, v = _property.split('=')
         except Exception as err:
             module.fail_json(msg="Attributes could not be set {0} because {1}".format(_property, sys.exc_info()))
         # XXX: maybe a little inconsistent
@@ -288,37 +291,55 @@ def jail_set(module, iocage_path='/usr/local/sbin/iocage', argument=None, proper
         _msg = "Attributes {0} were set on jail '{1}'.".format(_properties ,argument)
     return argument, _changed, _msg
 
-def jail_create_basejail(module, iocage_path='/usr/local/sbin/iocage', tag=None, release="10.2-RELEASE"):
+def jail_create_basejail(module, iocage_path='/usr/local/sbin/iocage', tag=None, release="11.0-RELEASE"):
     cmd = "{0} create tag={1} release={2}".format(iocage_path, tag, release)
-    #module.fail_json(msg="{0}".format(cmd))
     _changed = False
     rc = 1
     out = ""
     _msg = ""
-    if not module.check_mode:
-        rc, out, err = module.run_command(cmd)
-        if not rc == 0:
-            module.fail_json(msg="Basejail {0} could not be created.\nstdout:\n{1}\nstderr:\n{2}".format(tag, out, err))
-        _changed = True
-        _msg = "Basejail {0} was created.".format(tag)
     uuid, _, _ = jail_exists(module, iocage_path, tag, False)
+    if uuid == '-':
+        if not module.check_mode:
+            rc, out, err = module.run_command(cmd)
+            if not rc == 0:
+                module.fail_json(msg="Basejail {0} could not be created.\nstdout:\n{1}\nstderr:\n{2}".format(tag, out, err))
+            _changed = True
+            _msg = "Basejail {0} was created.".format(tag)
+        else:
+            _changed = True
+            _msg = "Basejail {0} would be created".format(tag)
+    else:
+        rc = 0
+        _msg = "Basejail {0} exist".format(tag)
     return uuid, _changed, _msg
 
-def jail_create_clone(module, iocage_path='/usr/local/sbin/iocage', clone_from_uuid=None, tag=None, properties=""):
-    cmd = "{0} clone {1} tag={2} {3}".format(iocage_path, clone_from_uuid, tag, properties)
+def jail_create(module, iocage_path='/usr/local/sbin/iocage', tag=None, properties="", clone_from=None):
+    clone_from_uuid = False
+    if clone_from != None:
+        clone_from_uuid, _, _ = jail_exists(module, iocage_path, clone_from, False)
+    if clone_from_uuid == False:
+        cmd = "{0} create tag={1} {2}".format(iocage_path, tag, properties)
+    else:
+        cmd = "{0} clone {1} tag={2} {3}".format(iocage_path, clone_from_uuid, tag, properties)
+
     _changed = False
     rc = 1
     out = ""
-    _msg = ""
-    if not module.check_mode:
-        rc, out, err = module.run_command(cmd)
+    _msg = "Jail {0} exist".format(tag)
 
-        if not rc == 0:
-            module.fail_json(msg="Jail '{0}' could not be cloned from '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(tag, clone_from_uuid, out, err))
+    uuid, _, _ = jail_exists(module, iocage_path, tag, False)
+    if uuid == '-':
+        if not module.check_mode:
+            rc, out, err = module.run_command(cmd)
+            if not rc == 0:
+                module.fail_json(msg="Jail '{0}' could not be created.\ncmd: {1}\nstdout:\n{2}\nstderr:\n{3}".format(tag, cmd, out, err))
+            _changed = True
+            _msg = "Jail '{0}' was created with properties {1}.\n\n{2}".format(tag, properties, cmd)
+            uuid, _, _ = jail_exists(module, iocage_path, tag, False)
+        else:
+            _changed = True
+            _msg = "Jail {0} would be created with properties {1} without check_mode".format(tag, properties)
 
-        _changed = True
-        _msg = "Jail '{0}' was cloned from '{1}' with properties {2}.\n\n{3}".format(tag, clone_from_uuid, properties, cmd)
-        uuid, _, _ = jail_exists(module, iocage_path, tag, False)
     return uuid, _changed, _msg
 
 def jail_destroy(module, iocage_path='/usr/local/sbin/iocage', argument=None):
@@ -327,24 +348,29 @@ def jail_destroy(module, iocage_path='/usr/local/sbin/iocage', argument=None):
     rc = 1
     out = ""
     _msg = ""
-    if not module.check_mode:
-        if not uuid == "-":
-            rc, out, err = module.run_command("{0} destroy -f {1}".format(iocage_path, argument))
-            if not rc == 0:
-                module.fail_json(msg="Jail '{0}' could not be destroyed.\nstdout:\n{1}\nstderr:\n{2}".format(argument, out, err))
+    uuid, _, _ = jail_exists(module, iocage_path, tag, False)
+    if uuid == '-':
+        if not module.check_mode:
+            if not uuid == "-":
+                rc, out, err = module.run_command("{0} destroy -f {1}".format(iocage_path, argument))
+                if not rc == 0:
+                    module.fail_json(msg="Jail '{0}' could not be destroyed.\nstdout:\n{1}\nstderr:\n{2}".format(argument, out, err))
 
-            _changed = True
-            _msg = "Jail '{0}' was destroyed.".format(argument)
-            jail_exists(module, iocage_path, argument, True)
+                _changed = True
+                _msg = "Jail '{0}' was destroyed.".format(argument)
+                jail_exists(module, iocage_path, argument, True)
+            else:
+                module.fail_json(msg="Jail '{0}' does not exist.".format(argument))
         else:
-            module.fail_json(msg="Jail '{0}' does not exist.".format(argument))
+                _changed = True
+                _msg = "Jail {0} would be destroyed".format(tag)
 
     return None, _changed, _msg
 
 def main():
     module = AnsibleModule(
             argument_spec    = dict(
-                state        = dict(default="exec", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "fetched", "exec", "pkg", "exists", "absent", "set"], required=False),
+                state        = dict(default="exec", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "fetched", "exec", "pkg", "exists", "absent", "set","present"], required=False),
                 uuid         = dict(default="", required=False),
                 stdout         = dict(default="", required=False),
                 stderr         = dict(default="", required=False),
@@ -405,7 +431,7 @@ def main():
             msgs.append(_msg)
 
     elif p["state"] == "fetched":
-	changed, _msg = release_fetch(module, iocage_path, release, update)
+        changed, _msg = release_fetch(module, iocage_path, release, update)
         msgs.append(_msg)
 
     elif p["state"] == "set":
@@ -432,11 +458,10 @@ def main():
         else:
             module.fail_json(msg="Jail '{0}' could not be created: {1}".format(tag, uuid))
 
-    elif p["state"] == "cloned":
-        clone_from_uuid, _, _ = jail_exists(module, iocage_path, (uuid or clone_from))
+    elif p["state"] == "present" or p["state"] == "cloned":
         tag_uuid, _, _ = jail_exists(module, iocage_path, tag)
         if not tag_uuid or tag_uuid == "-":
-            uuid, changed, _msg = jail_create_clone(module, iocage_path, clone_from, tag, properties)
+            uuid, changed, _msg = jail_create(module, iocage_path, tag, properties, (clone_from or False))
             msgs.append(_msg)
 	else:
 	    uuid = tag_uuid
