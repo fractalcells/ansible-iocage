@@ -2,38 +2,38 @@
   become: true
   become_method: sudo
   tasks:
-  - name: Check if release 10.2-RELEASE exists
-    iocage: state=fetched release=10.2-RELEASE
+  - name: Check if release 11.0-RELEASE exists
+    iocage: state=fetched release=11.0-RELEASE
 
   - name: Check if basejail exists
-    iocage: state=exists tag=test_basejail_10.2-RELEASE
+    iocage: state=exists tag=test_basejail_11.0-RELEASE
     ignore_errors: true
 
   - name: Check if base jail can be created
-    iocage: state=basejail tag=test_basejail_10.2-RELEASE release=10.2-RELEASE
+    iocage: state=basejail tag=test_basejail_11.0-RELEASE release=11.0-RELEASE
 # Basejails can be made templates
   - name: Verify that base jail can be converted
-    iocage: state=set tag=test_basejail_10.2-RELEASE properties="istemplate=yes"
+    iocage: state=set tag=test_basejail_11.0-RELEASE properties="template=yes"
   - name: Check if clone can be had
-    iocage: state=cloned tag=test_jail clone_from=test_basejail_10.2-RELEASE
+    iocage: state=cloned tag=test_jail clone_from=test_basejail_11.0-RELEASE
   - name: Check if cloned test jail can be destroyed
     iocage: state=absent tag=test_jail
   - name: Verify that base jail can be converted back
-    iocage: state=set tag=test_basejail_10.2-RELEASE properties="istemplate=no"
+    iocage: state=set tag=test_basejail_11.0-RELEASE properties="template=no"
 # template glue
   - name: Check if template jail can be created
-    iocage: state=template tag=test_template_10.2-RELEASE release=10.2-RELEASE
+    iocage: state=template tag=test_template_11.0-RELEASE release=11.0-RELEASE
     tags:
     - debug
   - name: Check if template jail can't be started
-    iocage: state=started tag=test_template_10.2-RELEASE force=yes
+    iocage: state=started tag=test_template_11.0-RELEASE force=yes
     ignore_errors: yes
   - name: Check if template jail can be force-started
-    iocage: state=started tag=test_template_10.2-RELEASE force=yes
+    iocage: state=started tag=test_template_11.0-RELEASE force=yes
   - name: Check if template jail can be stopped
     iocage: state=stopped tag=absent
   - name: Check if template jail can be destroyed
-    iocage: state=absent tag=test_template_10.2-RELEASE
+    iocage: state=absent tag=test_template_11.0-RELEASE
 
 # check with an absent jail. should produce lots of ignored errors.
   - name: Check if absent jail can't be destroyed
@@ -50,8 +50,12 @@
     ignore_errors: yes
 
 # check everything
+  - name: Check if test jail can be created
+    iocage: state=present tag=test_jail
+  - name: Check if test jail can be destroyed
+    iocage: state=absent tag=test_jail
   - name: Check if test jail can be cloned
-    iocage: state=cloned clone_from=test_basejail_10.2-RELEASE tag=test_jail
+    iocage: state=present clone_from=test_basejail_11.0-RELEASE tag=test_jail
   - name: Check if pkg info does not work in not-started test jail
     iocage: state=pkg tag=test_jail cmd="info"
     ignore_errors: yes
@@ -73,4 +77,4 @@
     iocage: state=absent tag=test_jail
 
   - name: Check if base jail can be destroyed
-    iocage: state=absent tag=test_basejail_10.2-RELEASE
+    iocage: state=absent tag=test_basejail_11.0-RELEASE
