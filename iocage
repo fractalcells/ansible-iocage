@@ -498,7 +498,7 @@ def main():
             module.fail_json(msg="Jail '{0}' doesn't exist".format(jail_human_id))
 
         # states that need running jail
-        if facts["iocage_jails"][uuid]["state"] != "up" and p["state"] in [ "exec", "pkg" ]:
+        if p["state"] in [ "exec", "pkg" ] and facts["iocage_jails"][uuid]["state"] != "up":
             module.fail_json(msg="Jail '{0}' not running".format(jail_human_id))
 
     if p["state"] == "started":
@@ -555,6 +555,9 @@ def main():
 
     elif p["state"] in ["present", "cloned", "template", "basejail"]:
 
+        do_basejail = False
+        clone_from_uuid = None
+
         if not uuid:
             if not release in facts["iocage_releases"]:
                 release, _release_changed, _release_msg = release_fetch(module,iocage_path,release)
@@ -565,10 +568,11 @@ def main():
             if p["state"] == "template":
                 properties["template"] = "yes"
 
-            if p["state"] == "basejail":
-                uuid, changed, _msg = jail_create(module, iocage_path, tag, {}, None, release, True)
+            elif p["state"] == "basejail":
+                properties = {}
+                do_basejail = True
 
-            if clone_from:
+            elif clone_from:
                 if clone_from in facts["iocage_jails"]:
                     clone_from_uuid = clone_from
                 if clone_from in facts["iocage_templates"]:
@@ -586,7 +590,7 @@ def main():
                     else:
                         module.fail_json(msg="unable to create jail {0}\nbasejail {1} doesn't exist".format(tag,clone_from))
 
-            uuid, changed, _msg = jail_create(module, iocage_path, tag, properties, (clone_from_uuid or None), release)
+            uuid, changed, _msg = jail_create(module, iocage_path, tag, properties, clone_from_uuid, release, do_basejail)
             msgs.append(_msg)
 
         elif p["update"]:
