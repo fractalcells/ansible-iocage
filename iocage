@@ -325,7 +325,7 @@ def jail_set(module, iocage_path, uuid, properties={}):
                 propval = 'none'
             else:
                 # escaping single quotes (if any) to pass shell
-                propval = '{0}'.format(_val)
+                propval = '\\"{0}\\"'.format(_val)
         elif type(_val) is bool:
             if _val:
                 propval='on'
