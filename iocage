@@ -324,8 +324,7 @@ def jail_set(module, iocage_path, uuid, properties={}):
             if _val == '':
                 propval = 'none'
             else:
-                # escaping single quotes (if any) to pass shell
-                propval = '\\"{0}\\"'.format(_val)
+                propval = '{0}'.format(_val)
         elif type(_val) is bool:
             if _val:
                 propval='on'
@@ -335,6 +334,10 @@ def jail_set(module, iocage_path, uuid, properties={}):
             module.fail_json(msg="Unable to set attribute {0} to {1} for jail {2}".format(p,str(_val).replace("'","'\\''"),uuid))
 
         if 'CHECK_NEW_JAIL' in _existing_props or ( _property in _existing_props and _existing_props[_property] != propval and propval != False):
+            if type(_val) is str and _val != '':
+                # escaping quotes (if any) to pass string to shell (ex: "|" case)
+                propval = '\\"{0}\\"'.format(_val)
+
             _props_to_be_changed[_property] = propval
 
     if len(_props_to_be_changed) > 0:
