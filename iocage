@@ -118,7 +118,7 @@ def _get_iocage_facts(module, iocage_path, argument="all", uuid=None):
             continue
         elif re.match('(\d+|-)',_jid):
             (_jid,_uuid,_boot,_state,_tag,_ip) = l.split()
-            if _uuid != '-':
+            if _uuid != "":
                 _properties = _jail_get_properties(module, iocage_path, _uuid)
                 _jails[_uuid] = { "jid": _jid, "uuid": _uuid, "state": _state, "tag": _tag, "properties": _properties }
         else:
@@ -158,18 +158,21 @@ def jail_exists(module, iocage_path, argument=None, assume_absent=False):
     cmd = "%s get host_hostuuid %s" %(iocage_path, argument)
     rc, uuid, err = module.run_command(cmd)
     _msg = ""
-    if uuid != '-' and assume_absent:
-        module.fail_json(msg="Jail {0} already exists.".format(argument))
 
     if not rc == 0:
-        uuid = "-"
+        uuid = ""
+
+    if uuid == "" and assume_absent:
+        return False
+    elif uuid == "":
+        module.fail_json(msg="Jail {0} exists.".format(argument))
 
     return uuid.strip()
 
 def jail_start(module, iocage_path, uuid, force=None):
     cmd = "{0} start {1}".format(iocage_path, uuid)
     if force == "yes":
-        cmd = "{0} start -f {1}".format(iocage_path, uuid)
+        cmd = "{0} start {1}".format(iocage_path, uuid)
     rc = 1
     out = ""
     _msg = ""
@@ -283,7 +286,7 @@ def jail_pkg(module, iocage_path, uuid, cmd='info'):
 def _jail_get_properties(module, iocage_path, uuid):
     rc = 1
     out = ""
-    if uuid and uuid != "-":
+    if uuid and uuid != "":
         properties = {}
         cmd = "{0} get all {1}".format(iocage_path, uuid)
         rc, out, err = module.run_command(cmd)
@@ -424,7 +427,7 @@ def jail_destroy(module, iocage_path, uuid):
     else:
         _msg = "Jail {0} would have been destroyed".format(uuid)
 
-    return True, _msg
+    return uuid, True, _msg
 
 def main():
     module = AnsibleModule(
@@ -480,6 +483,12 @@ def main():
 
     facts = _get_iocage_facts(module,iocage_path,"all")
 
+    jails = {}
+    for u in facts["iocage_jails"]:
+        jails[u] = facts["iocage_jails"][u]
+    for u in facts["iocage_templates"]:
+        jails[u] = facts["iocage_templates"][u]
+
     if p["state"] == "facts":
         module.exit_json(changed=False, ansible_facts=facts)
 
@@ -492,12 +501,17 @@ def main():
                     if facts["iocage_jails"][jail]["tag"] == tag:
                         uuid = jail
                         break
+                if not uuid or uuid == "":
+                    for jail in facts["iocage_templates"]:
+                        if facts["iocage_templates"][jail]["tag"] == tag:
+                            uuid = jail
+                            break
         else:
-            if uuid not in facts["iocage_jails"]:
+            if uuid not in facts["iocage_jails"] and uuid not in facts["iocage_templates"]:
                 module.fail_json(msg="Jail '{0}' doesn't exist".format(uuid))
 
         # states that need existing jail
-        if not uuid and p["state"] in [ "started", "stopped", "restarted", "exists", "set", "exec", "pkg" ]:
+        if not uuid and p["state"] in [ "started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent" ]:
             module.fail_json(msg="Jail '{0}' doesn't exist".format(jail_human_id))
 
         # states that need running jail
@@ -505,29 +519,29 @@ def main():
             module.fail_json(msg="Jail '{0}' not running".format(jail_human_id))
 
     if p["state"] == "started":
-        if facts["iocage_jails"][uuid]["state"] != "up":
+        if jails[uuid]["state"] != "up":
             changed, _msg = jail_start(module, iocage_path, uuid, force)
             msgs.append(_msg)
-            facts["iocage_jails"][uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
-            if facts["iocage_jails"][uuid]["state"] != "up":
+            jails[uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
+            if jails[uuid]["state"] != "up":
                 module.fail_json(msg="Starting jail {} failed with {} :(".format(jail_human_id,_msg))
         else:
             msgs.append("Jail {0} already started".format(jail_human_id))
 
     elif p["state"] == "stopped":
-        if facts["iocage_jails"][uuid]["state"] == "up":
+        if jails[uuid]["state"] == "up":
             changed, _msg = jail_stop(module, iocage_path, uuid)
             msgs.append(_msg)
-            facts["iocage_jails"][uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
-            if facts["iocage_jails"][uuid]["state"] != "down":
+            jails[uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
+            if jails[uuid]["state"] != "down":
                 module.fail_json(msg="Stopping jail {} failed with {} :(".format(jail_human_id,_msg))
         else:
             msgs.append("Jail {0} already stopped".format(jail_human_id))
 
     elif p["state"] == "restarted":
         changed, _msg = jail_restart(module, iocage_path, uuid)
-        facts["iocage_jails"][uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
-        if facts["iocage_jails"][uuid]["state"] != "up":
+        jails[uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
+        if jails[uuid]["state"] != "up":
             module.fail_json(msg="Starting jail {} failed with {} :(".format(jail_human_id,_msg))
         msgs.append(_msg)
 
@@ -554,7 +568,7 @@ def main():
 
     elif p["state"] == "set":
         changed, _msg = jail_set(module, iocage_path, uuid, properties)
-        facts["iocage_jails"][uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
+        jails[uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
 
     elif p["state"] in ["present", "cloned", "template", "basejail"]:
 
@@ -576,13 +590,11 @@ def main():
                 do_basejail = True
 
             elif clone_from:
-                if clone_from in facts["iocage_jails"]:
-                    clone_from_uuid = clone_from
-                if clone_from in facts["iocage_templates"]:
+                if clone_from in jails:
                     clone_from_uuid = clone_from
                 else:
-                    for j in facts["iocage_jails"] and facts["iocage_templates"]:
-                        if clone_from == facts[j]["tag"]:
+                    for j in jails:
+                        if clone_from == jails[j]["tag"]:
                             clone_from_uuid = j
                             break
 
@@ -620,14 +632,22 @@ def main():
 
     elif p["state"] == "absent":
         if uuid:
+            if jails[uuid]['state'] == "up":
+                changed, _msg = jail_stop(module, iocage_path, uuid)
+                msgs.append(_msg)
+
             uuid, changed, _msg = jail_destroy(module, iocage_path, uuid)
             msgs.append(_msg)
-            del(facts["iocage_jails"][uuid])
+            del(jails[uuid])
+            if uuid in facts["iocage_jails"]:
+                del(facts["iocage_jails"][uuid])
+            if uuid in facts["iocage_templates"]:
+                del(facts["iocage_templates"][uuid])
         else:
             msgs.append("Jail {0} doesn't exist".format(jail_identifier))
 
 
-    uuid = uuid or "-"
+    uuid = uuid or ""
     module.exit_json(changed=changed, msg=", ".join(msgs), uuid=uuid, ansible_facts=facts, stdout=out, stderr=err)
 
 # import module snippets
