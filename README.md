@@ -3,7 +3,7 @@ ansible-iocage
 
 [iocage](https://github.com/iocage/iocage) module for ansible. Based on https://github.com/fractalcells/ansible-iocage
 
-For now, works with sh version of iocage. working with new python version is planned :)
+Works with new python3 iocage, not anymore with shell version
 
 release is host's one if not specified
 
