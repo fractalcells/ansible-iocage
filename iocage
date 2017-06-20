@@ -55,16 +55,16 @@ author: xmj
 
 EXAMPLES = """
 # create jail (without cloning):
-- iocage: state=present tag="foo" properties={ip4_addr: 'lo1|10.1.0.5', boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1'}
+- iocage: state=present tag="foo" properties={ip4_addr: 'lo1|10.1.0.5', boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.json, defaultrouter: '10.1.0.1'}
 
 # create a cloned jail (creates basejail if needed):
-- iocage: state=present tag="foo" clone_from="05a32718-2de2-11e5-ad68-a710c4a2a00f" properties={ip4_addr: 'lo1|10.1.0.5' boot: 'on' allow_sysvipc: 1 pkglist: /path/to/pkglist.txt defaultrouter: '10.1.0.1'}
+- iocage: state=present tag="foo" clone_from="05a32718-2de2-11e5-ad68-a710c4a2a00f" properties={ip4_addr: 'lo1|10.1.0.5' boot: 'on' allow_sysvipc: 1 pkglist: /path/to/pkglist.json defaultrouter: '10.1.0.1'}
 
 # create basejail:
 - iocage: state=basejail tag="foo"
 
 # create template:
-- iocage: state=template tag="foo" clone_from="basejail_10.2-BETA1" properties={ip4_addr: 'lo1|10.1.0.5' boot: on allow_sysvipc: 1 pkglist: /path/to/pkglist.txt defaultrouter: '10.1.0.1'"
+- iocage: state=template tag="foo" clone_from="basejail_10.2-BETA1" properties={ip4_addr: 'lo1|10.1.0.5' boot: on allow_sysvipc: 1 pkglist: /path/to/pkglist.json defaultrouter: '10.1.0.1'"
 
 # start existing jail:
 - iocage: state=started uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
@@ -84,11 +84,11 @@ EXAMPLES = """
 
 def _get_iocage_facts(module, iocage_path, argument="all", uuid=None):
     if argument == 'jails':
-        cmd = "{0} list".format(iocage_path)
+        cmd = "{0} list -hl".format(iocage_path)
     elif argument == 'templates':
-        cmd = "{0} list -t".format(iocage_path)
+        cmd = "{0} list -ht".format(iocage_path)
     elif argument == 'releases':
-        cmd = "{0} list -r".format(iocage_path)
+        cmd = "{0} list -hr".format(iocage_path)
     elif argument == "all":
         _jails = _get_iocage_facts(module, iocage_path, "jails")
         _templates = _get_iocage_facts(module, iocage_path, "templates")
@@ -98,31 +98,38 @@ def _get_iocage_facts(module, iocage_path, argument="all", uuid=None):
         module.fail_json(msg="_get_iocage_facts({0}): argument not understood".format(argument))
 
     rc, state, err = module.run_command(cmd)
+
     if rc != 0:
         module.fail_json(msg="_get_iocage_facts():\ncmd: '{0}' return {1}\nstdout: '{2}'\nstderr: '{3}')".format(cmd, rc, state, err))
 
     if argument == 'releases':
         _releases=[]
         for l in state.split('\n'):
-            if re.match('\s+\d',l):
+            if re.match('\s*\d',l):
                 _releases.append(l.strip())
         return _releases
 
     _jails = {}
-    for l in state.strip().split('\n'):
-        _jid=l.split()[0]
-        if _jid == '---':
-            # non-iocage jails: skip all
-            break
-        elif _jid == 'JID':
-            continue
-        elif re.match('(\d+|-)',_jid):
-            (_jid,_uuid,_boot,_state,_tag,_ip) = l.split()
-            if _uuid != "":
-                _properties = _jail_get_properties(module, iocage_path, _uuid)
-                _jails[_uuid] = { "jid": _jid, "uuid": _uuid, "state": _state, "tag": _tag, "properties": _properties }
-        else:
-            module.fail_json(msg="_get_iocage_facts():\nUnreadable stdout line from cmd '{0}': '{1}'".format(cmd,l))
+#    module.fail_json(msg=state)
+    try:
+        for l in state.split('\n'):
+            if l == "":
+                continue
+            _jid=l.split()[0]
+            if _jid == '---':
+                # non-iocage jails: skip all
+                break
+            elif _jid == 'JID':
+                continue
+            elif re.match('(\d+|-)',_jid):
+                (_jid,_uuid,_boot,_state,_tag,_type,_release,_ip4,_ip6,_template) = l.split()
+                if _uuid != "":
+                    _properties = _jail_get_properties(module, iocage_path, _uuid)
+                    _jails[_uuid] = { "jid": _jid, "uuid": _uuid, "state": _state, "tag": _tag, "properties": _properties }
+            else:
+                module.fail_json(msg="_get_iocage_facts():\nUnreadable stdout line from cmd '{0}': '{1}'".format(cmd,l))
+    except:
+        module.fail_json(msg="unable to parse {0}".format(state))
 
     if uuid:
         if uuid in _jails:
@@ -162,9 +169,7 @@ def jail_exists(module, iocage_path, argument=None, assume_absent=False):
     if not rc == 0:
         uuid = ""
 
-    if uuid == "" and assume_absent:
-        return False
-    elif uuid == "":
+    if uuid != "" and assume_absent:
         module.fail_json(msg="Jail {0} exists.".format(argument))
 
     return uuid.strip()
@@ -188,6 +193,7 @@ def jail_start(module, iocage_path, uuid, force=None):
 
 def _props_to_str(props):
     argstr = ""
+    minargs = ""
     for _prop in props:
         _val = props[_prop]
         if _val == '-' or _val == '' or not _val:
@@ -199,17 +205,19 @@ def _props_to_str(props):
 
     return argstr
 
-def release_fetch(module, iocage_path, release="NO-RELEASE", properties={}):
+def release_fetch(module, iocage_path, release="NO-RELEASE", args="-F base.txz"):
     if not module.check_mode:
-        cmd = "{0} fetch release={1} {2}".format(iocage_path, release, _props_to_str(properties))
+        if update:
+            args += " -U"
+        cmd = "{0} fetch -r {1} {2}".format(iocage_path, release, args)
         rc = 1
         rc, out, err = module.run_command(cmd)
         if not rc == 0:
             module.fail_json(msg="Release {0} could not be fetched.\nstdout:\n{1}\nstderr:\n{2}".format(release, out, err))
         _changed = True
-        if _exists and update:
+        if update:
              _msg = "Release {0} was successfully updated.".format(release)
-        elif not _exists:
+        else:
              _msg = "Release {0} was successfully fetched.".format(release)
     else:
         _changed = True
@@ -370,15 +378,22 @@ def jail_create(module, iocage_path, tag=None, properties={}, clone_from_uuid=No
     out = ""
     _msg = ""
 
+    opts = ""
+    if 'release' in properties:
+        opts += " -r {0}".format(properties["release"])
+        
+    if 'pkglist' in properties:
+        opts += " -p {0}".format(properties["pkglist"])
+
     if clone_from_uuid == None:
         if basejail:
-            cmd = "{0} create -b tag={1} release={2}".format(iocage_path, tag, release)
+            cmd = "{0} create -b -r {2} tag={1}".format(iocage_path, tag, release)
 
         else:
-            cmd = "{0} create tag={1} release={2} {3}".format(iocage_path, tag, release, _props_to_str(properties))
+            cmd = "{0} create -r {2} tag={1} {3}".format(iocage_path, tag, release, _props_to_str(properties))
 
     else:
-        cmd = "{0} clone {1} tag={2} {3}".format(iocage_path, clone_from_uuid, tag, _props_to_str(properties))
+        cmd = "{0} clone -t {1} tag={2} {3}".format(iocage_path, clone_from_uuid, tag, _props_to_str(properties))
 
     if not module.check_mode:
         rc, out, err = module.run_command(cmd)
@@ -386,8 +401,11 @@ def jail_create(module, iocage_path, tag=None, properties={}, clone_from_uuid=No
             module.fail_json(msg="Jail '{0}' could not be created.\ncmd: {1}\nstdout:\n{2}\nstderr:\n{3}".format(tag, cmd, out, err))
         _msg += "Jail '{0}' was created with properties {1}.\n\n{2}".format(tag, str(properties), cmd)
         uuid = jail_exists(module, iocage_path, tag)
+        if not uuid:
+            module.fail_json(msg="Jail '{0}' not created ???\ncmd: {1}\nstdout:\n{2}\nstderr:\n{3}".format(tag, cmd, out, err))
+
     else:
-        _msg += "Jail {0} would be created with command:\n{2}\n".format(tag, _props_to_str(properties), cmd)
+        _msg += "Jail {0} would be created with command:\n{1}\n".format(tag, cmd)
         uuid = "CHECK_MODE_FAKE_UUID_FOR_{}".format(tag)
 
     return uuid, True, _msg
@@ -438,6 +456,7 @@ def main():
             stderr         = dict(default="", required=False),
             tag          = dict(default="", required=False),
             properties   = dict(default={}, required=False, type="dict"),
+            args         = dict(default="", required=False),
             force        = dict(default="", required=False),
             user         = dict(default="", required=False),
             cmd          = dict(default="", required=False),
@@ -456,6 +475,7 @@ def main():
     properties = p["properties"]
     force = p["force"]
     cmd = p["cmd"]
+    args = p["args"]
     clone_from= p["clone_from"]
     user = p["user"] or "root"
     release = p["release"]
@@ -558,7 +578,7 @@ def main():
 
     elif p["state"] == "fetched":
         if update or release not in facts["iocage_releases"]:
-            rel, changed, _msg = release_fetch(module, iocage_path, release, properties)
+            rel, changed, _msg = release_fetch(module, iocage_path, release, args)
             msgs.append(_msg)
             facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
             if release not in facts["iocage_releases"] or update:
@@ -584,6 +604,7 @@ def main():
 
             if p["state"] == "template":
                 properties["template"] = "yes"
+                properties["boot"] = "off"
 
             elif p["state"] == "basejail":
                 properties = {}
