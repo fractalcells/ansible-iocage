@@ -491,7 +491,10 @@ def main():
             if rc != 0:
                 module_fail_json(msg="unable to run uname -r ???")
 
-            release = re.match('(\d+\.\d+\-RELEASE).*',out.strip()).group(1)
+            try:
+                release = re.match('(\d+\.\d+\-RELEASE).*',out.strip()).group(1)
+            except:
+                raise Exception("Not running a release: {}".format(out))
 
     msgs = []
     changed = False
