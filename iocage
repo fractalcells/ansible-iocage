@@ -205,7 +205,7 @@ def _props_to_str(props):
 
     return argstr
 
-def release_fetch(module, iocage_path, release="NO-RELEASE", args="-F base.txz"):
+def release_fetch(module, iocage_path, update, release="NO-RELEASE", args="-F base.txz"):
     if not module.check_mode:
         if update:
             args += " -U"
@@ -492,9 +492,9 @@ def main():
                 module_fail_json(msg="unable to run uname -r ???")
 
             try:
-                release = re.match('(\d+\.\d+\-RELEASE).*',out.strip()).group(1)
+                release = re.match('(\d+\.\d+\-(RELEASE|RC\d+)).*',out.strip()).group(1)
             except:
-                raise Exception("Not running a release: {}".format(out))
+                raise Exception("Release not recogised: {}".format(out))
 
     msgs = []
     changed = False
@@ -581,7 +581,7 @@ def main():
 
     elif p["state"] == "fetched":
         if update or release not in facts["iocage_releases"]:
-            rel, changed, _msg = release_fetch(module, iocage_path, release, args)
+            rel, changed, _msg = release_fetch(module, iocage_path, update, release, args)
             msgs.append(_msg)
             facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
             if release not in facts["iocage_releases"] or update:
@@ -600,7 +600,7 @@ def main():
 
         if not uuid:
             if not release in facts["iocage_releases"]:
-                release, _release_changed, _release_msg = release_fetch(module,iocage_path,release)
+                release, _release_changed, _release_msg = release_fetch(module,iocage_path,update,release)
                 if _release_changed:
                     facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
                     msgs.append(_release_msg)
@@ -634,7 +634,7 @@ def main():
 
         elif p["update"]:
             if not release in facts["iocage_releases"]:
-                release, _release_changed, _release_msg = release_fetch(module,iocage_path,release)
+                release, _release_changed, _release_msg = release_fetch(module,iocage_path,update,release)
                 if _release_changed:
                     _msg += _release_msg
                     facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
