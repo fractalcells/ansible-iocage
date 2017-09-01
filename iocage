@@ -200,7 +200,7 @@ def _props_to_str(props):
 
     return argstr
 
-def release_fetch(module, iocage_path, update, release="NO-RELEASE", args="-F base.txz"):
+def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", args="-F base.txz"):
     if not module.check_mode:
         if update:
             args += " -U"
@@ -478,26 +478,23 @@ def main():
     upgrade = False
 
     if not release or release == "":
-        if uuid and not (upgrade):
-            _jail_props = _jail_get_properties(module, iocage_path, uuid)
-            release = _jail_props["release"]
-        else:
-            rc, out, err = module.run_command("uname -r")
-            if rc != 0:
-                module_fail_json(msg="unable to run uname -r ???")
+        # if name and not (upgrade):
+        #     _jail_props = _jail_get_properties(module, iocage_path, name)
+        #     release = _jail_props["release"]
+        #else:
+        rc, out, err = module.run_command("uname -r")
+        if rc != 0:
+            module_fail_json(msg="unable to run uname -r ???")
 
-            try:
-                release = re.match('(\d+\.\d+\-(RELEASE|RC\d+)).*',out.strip()).group(1)
-            except:
-                raise Exception("Release not recogised: {}".format(out))
+        try:
+            release = re.match('(\d+\.\d+\-(RELEASE|RC\d+)).*',out.strip()).group(1)
+        except:
+            raise Exception("Release not recogised: {}".format(out))
 
     msgs = []
     changed = False
     out = ""
     err = ""
-
-    jail_identifier = (uuid or tag.replace('.', ''))
-    jail_human_id = (tag or uuid)
 
     facts = _get_iocage_facts(module,iocage_path,"all")
 
@@ -511,68 +508,59 @@ def main():
         module.exit_json(changed=False, ansible_facts=facts)
 
     if p["state"] not in [ "fetched" ]:
-        if not uuid or uuid == "":
-            if not tag or tag == "":
-                module.fail_json(msg="No uuid nor tag given.")
-            else:
-                for jail in facts["iocage_jails"]:
-                    if facts["iocage_jails"][jail]["tag"] == tag:
-                        uuid = jail
-                        break
-                if not uuid or uuid == "":
-                    for jail in facts["iocage_templates"]:
-                        if facts["iocage_templates"][jail]["tag"] == tag:
-                            uuid = jail
-                            break
-        else:
-            if uuid not in facts["iocage_jails"] and uuid not in facts["iocage_templates"]:
-                module.fail_json(msg="Jail '{0}' doesn't exist".format(uuid))
+        if not name or name == "":
+            module.fail_json(msg="No name given.")
 
-        # states that need existing jail
-        if not uuid and p["state"] in [ "started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent" ]:
-            module.fail_json(msg="Jail '{0}' doesn't exist".format(jail_human_id))
+        # states that need name of jail
+        if not name and p["state"] in [ "started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent" ]:
+            module.fail_json(msg="name needed for state ".format(p["state"]))
+
+        # need existing jail
+        if p["state"] in [ "started", "stopped", "restarted", "set", "exec", "pkg" ]:
+            if name not in facts["iocage_jails"] and name not in facts["iocage_templates"]:
+                module.fail_json(msg="Jail '{0}' doesn't exist".format(name))
 
         # states that need running jail
-        if p["state"] in [ "exec", "pkg" ] and facts["iocage_jails"][uuid]["state"] != "up":
-            module.fail_json(msg="Jail '{0}' not running".format(jail_human_id))
+        if p["state"] in [ "exec", "pkg" ] and facts["iocage_jails"][name]["state"] != "up":
+            module.fail_json(msg="Jail '{0}' not running".format(name))
 
     if p["state"] == "started":
-        if jails[uuid]["state"] != "up":
-            changed, _msg = jail_start(module, iocage_path, uuid, force)
+        if jails[name]["state"] != "up":
+            changed, _msg = jail_start(module, iocage_path, name, force)
             msgs.append(_msg)
-            jails[uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
-            if jails[uuid]["state"] != "up":
-                module.fail_json(msg="Starting jail {} failed with {} :(".format(jail_human_id,_msg))
+            jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
+            if jails[name]["state"] != "up":
+                module.fail_json(msg="Starting jail {} failed with {} :(".format(name,_msg))
         else:
-            msgs.append("Jail {0} already started".format(jail_human_id))
+            msgs.append("Jail {0} already started".format(name))
 
     elif p["state"] == "stopped":
-        if jails[uuid]["state"] == "up":
-            changed, _msg = jail_stop(module, iocage_path, uuid)
+        if jails[name]["state"] == "up":
+            changed, _msg = jail_stop(module, iocage_path, name)
             msgs.append(_msg)
-            jails[uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
-            if jails[uuid]["state"] != "down":
-                module.fail_json(msg="Stopping jail {} failed with {} :(".format(jail_human_id,_msg))
+            jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
+            if jails[name]["state"] != "down":
+                module.fail_json(msg="Stopping jail {} failed with {} :(".format(name,_msg))
         else:
-            msgs.append("Jail {0} already stopped".format(jail_human_id))
+            msgs.append("Jail {0} already stopped".format(name))
 
     elif p["state"] == "restarted":
-        changed, _msg = jail_restart(module, iocage_path, uuid)
-        jails[uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
-        if jails[uuid]["state"] != "up":
-            module.fail_json(msg="Starting jail {} failed with {} :(".format(jail_human_id,_msg))
+        changed, _msg = jail_restart(module, iocage_path, name)
+        jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
+        if jails[name]["state"] != "up":
+            module.fail_json(msg="Starting jail {} failed with {} :(".format(name,_msg))
         msgs.append(_msg)
 
     elif p["state"] == "exec":
-        changed, _msg, out, err = jail_exec(module, iocage_path, uuid, user, cmd)
+        changed, _msg, out, err = jail_exec(module, iocage_path, name, user, cmd)
         msgs.append(_msg)
 
     elif p["state"] == "pkg":
-        changed, _msg, out, err = jail_pkg(module, iocage_path, uuid, cmd)
+        changed, _msg, out, err = jail_pkg(module, iocage_path, name, cmd)
         msgs.append(_msg)
 
     elif p["state"] == "exists":
-        msgs.append("Jail {0} exists".format(jail_human_id))
+        msgs.append("Jail {0} exists".format(name))
 
     elif p["state"] == "fetched":
         if update or release not in facts["iocage_releases"]:
@@ -585,89 +573,88 @@ def main():
             msgs.append("Release {0} already fetched".format(release))
 
     elif p["state"] == "set":
-        changed, _msg = jail_set(module, iocage_path, uuid, properties)
-        jails[uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
+        changed, _msg = jail_set(module, iocage_path, name, properties)
+        jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
 
     elif p["state"] in ["present", "cloned", "template", "basejail"]:
 
         do_basejail = False
-        clone_from_uuid = None
+        clone_from_name = None
+        clone_from_template = None
+        jail_exists = False
 
-        if not uuid:
-            if not release in facts["iocage_releases"]:
-                release, _release_changed, _release_msg = release_fetch(module,iocage_path,update,release)
-                if _release_changed:
-                    facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
-                    msgs.append(_release_msg)
+        if not release in facts["iocage_releases"]:
+            release, _release_changed, _release_msg = release_fetch(module,iocage_path,update,release)
+            if _release_changed:
+                facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
+                msgs.append(_release_msg)
 
-            if p["state"] == "template":
-                properties["template"] = "yes"
-                properties["boot"] = "off"
+        if p["state"] == "template":
+            properties["template"] = "yes"
+            properties["boot"] = "off"
+            if name in facts["iocage_templates"]:
+                jail_exists = True
 
-            elif p["state"] == "basejail":
-                properties = {}
-                do_basejail = True
+        elif p["state"] == "basejail":
+            properties = {}
+            do_basejail = True
 
-            elif clone_from:
-                if clone_from in jails:
-                    clone_from_uuid = clone_from
+        elif clone_from:
+            if clone_from in facts["iocage_jails"]:
+                clone_from_name = clone_from
+            elif clone_from in facts["iocage_templates"]:
+                clone_from_template = clone_from
+            else:
+                if module.check_mode:
+                    # todo: use facts to check if basejail would have been created before
+                    msgs.append("Jail {0} would have been cloned from (nonexisting) jail or template {1}".format(name,clone_from))
                 else:
-                    for j in jails:
-                        if clone_from == jails[j]["tag"]:
-                            clone_from_uuid = j
-                            break
+                    module.fail_json(msg="unable to create jail {0}\nbasejail {1} doesn't exist".format(name,clone_from))
 
-                if not clone_from_uuid:
-                    if module.check_mode:
-                        # todo: use facts to check if basejail would have been created before
-                        msgs.append("Jail {0} would have been cloned from (nonexisting) jail or template {1}".format(jail_human_id,clone_from))
-                    else:
-                        module.fail_json(msg="unable to create jail {0}\nbasejail {1} doesn't exist".format(tag,clone_from))
-
-            uuid, changed, _msg = jail_create(module, iocage_path, tag, properties, clone_from_uuid, release, do_basejail)
+        if not name in facts["iocage_templates"] and not name in facts["iocage_jails"]:
+            name, changed, _msg = jail_create(module, iocage_path, name, properties, clone_from_name, clone_from_template, release, do_basejail)
             msgs.append(_msg)
+        else:
+            changed=False
+            msgs.append("{} already exists".format(name))
 
-        elif p["update"]:
+        if p["update"]:
             if not release in facts["iocage_releases"]:
                 release, _release_changed, _release_msg = release_fetch(module,iocage_path,update,release)
                 if _release_changed:
                     _msg += _release_msg
                     facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
 
-            release, changed, _msg = jail_update(module, iocage_path, uuid, release)
+            release, changed, _msg = jail_update(module, iocage_path, name, release)
             msgs.append(_msg)
 
-        # re-set properties (iocage missing them on creation - iocage-sh bug)
-        if len(p["properties"]) > 0:
-            changed, _msg = jail_set(module, iocage_path, uuid, properties)
-            if changed:
-                msgs.append(_msg)
+#        # re-set properties (iocage missing them on creation - iocage-sh bug)
+#        if len(p["properties"]) > 0:
+#            changed, _msg = jail_set(module, iocage_path, name, properties)
+#            if changed:
+#                msgs.append(_msg)
 
         if changed:
             if p["state"] == "template":
-                facts["iocage_templates"][uuid] = _get_iocage_facts(module,iocage_path,"templates",uuid)
+                facts["iocage_templates"][name] = _get_iocage_facts(module,iocage_path,"templates",name)
             else:
-                facts["iocage_jails"][uuid] = _get_iocage_facts(module,iocage_path,"jails",uuid)
+                facts["iocage_jails"][name] = _get_iocage_facts(module,iocage_path,"jails",name)
 
     elif p["state"] == "absent":
-        if uuid:
-            if jails[uuid]['state'] == "up":
-                changed, _msg = jail_stop(module, iocage_path, uuid)
-                msgs.append(_msg)
-
-            uuid, changed, _msg = jail_destroy(module, iocage_path, uuid)
+        if jails[name]['state'] == "up":
+            changed, _msg = jail_stop(module, iocage_path, name)
             msgs.append(_msg)
-            del(jails[uuid])
-            if uuid in facts["iocage_jails"]:
-                del(facts["iocage_jails"][uuid])
-            if uuid in facts["iocage_templates"]:
-                del(facts["iocage_templates"][uuid])
-        else:
-            msgs.append("Jail {0} doesn't exist".format(jail_identifier))
 
+        name, changed, _msg = jail_destroy(module, iocage_path, name)
+        msgs.append(_msg)
+        del(jails[name])
+        if name in facts["iocage_jails"]:
+            del(facts["iocage_jails"][name])
+        if name in facts["iocage_templates"]:
+            del(facts["iocage_templates"][name])
 
-    uuid = uuid or ""
-    module.exit_json(changed=changed, msg=", ".join(msgs), uuid=uuid, ansible_facts=facts, stdout=out, stderr=err)
+    name = name or ""
+    module.exit_json(changed=changed, msg=", ".join(msgs), name=name, ansible_facts=facts, stdout=out, stderr=err)
 
 # import module snippets
 from ansible.module_utils.basic import *

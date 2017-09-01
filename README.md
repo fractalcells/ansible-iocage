@@ -7,8 +7,6 @@ Works with new python3 iocage, not anymore with shell version
 
 release is host's one if not specified
 
-as with iocage, jail can be specified as tag or uuid, uuid can be partial
-
 release is automatically fetched if missing
 
 Usecases:
@@ -65,7 +63,7 @@ iocage: state=exec name="myjail" user="root" cmd="service sshd start"
 
 destroy jail:
 ```
-iocage: state=absent uuid="myjail"
+iocage: state=absent name="myjail"
 ```
 
 set attributes on jail:
