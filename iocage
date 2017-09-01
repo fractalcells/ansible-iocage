@@ -52,31 +52,28 @@ author: xmj
 
 EXAMPLES = """
 # create jail (without cloning):
-- iocage: state=present properties={ip4_addr: 'lo1|10.1.0.5', boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.json, defaultrouter: '10.1.0.1'}
-
-# create a cloned jail (creates basejail if needed):
-- iocage: state=present clone_from="05a32718-2de2-11e5-ad68-a710c4a2a00f" properties={ip4_addr: 'lo1|10.1.0.5' boot: 'on' allow_sysvipc: 1 pkglist: /path/to/pkglist.json defaultrouter: '10.1.0.1'}
-
-# create basejail:
-- iocage: state=basejail 
+- iocage: name="foo" state=present properties={ip4_addr: 'lo1|10.1.0.5', boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.json, defaultrouter: '10.1.0.1'}
 
 # create template:
-- iocage: state=template clone_from="basejail_10.2-BETA1" properties={ip4_addr: 'lo1|10.1.0.5' boot: on allow_sysvipc: 1 pkglist: /path/to/pkglist.json defaultrouter: '10.1.0.1'"
+- iocage: name="tplfoo" state=template properties={ip4_addr: 'lo1|10.1.0.5' boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.json, defaultrouter: '10.1.0.1'"
+
+# create a cloned jail (creates basejail if needed):
+- iocage: name="foo" state=present clone_from="tplfoo" properties={ip4_addr: 'lo1|10.1.0.5', boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.json, defaultrouter: '10.1.0.1'}
 
 # start existing jail:
-- iocage: state=started name="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+- iocage: name="foo" state=started
 
 # stop existing jail:
-- iocage: state=stopped name="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+- iocage: name="foo" state=stopped
 
 # restart existing jail:
-- iocage: state=restarted name="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+- iocage: name="foo" state=restarted
 
 # execute command in (running) jail:
-- iocage state=exec name="05a32718-2de2-11e5-ad68-a710c4a2a00f" cmd="service sshd start"
+- iocage: name="foo" state=exec cmd="service sshd start"
 
 # force destroy jail
-- iocage state=absent name="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+- iocage: name="foo" state=absent
 """
 
 def _get_iocage_facts(module, iocage_path, argument="all", name=None):
