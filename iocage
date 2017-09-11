@@ -513,7 +513,7 @@ def main():
             module.fail_json(msg="name needed for state ".format(p["state"]))
 
         # need existing jail
-        if p["state"] in [ "started", "stopped", "restarted", "set", "exec", "pkg" ]:
+        if p["state"] in [ "started", "stopped", "restarted", "set", "exec", "pkg", "exists" ]:
             if name not in facts["iocage_jails"] and name not in facts["iocage_templates"]:
                 module.fail_json(msg="Jail '{0}' doesn't exist".format(name))
 
