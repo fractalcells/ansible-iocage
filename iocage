@@ -197,7 +197,7 @@ def _props_to_str(props):
 
     return argstr
 
-def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", args="-F base.txz"):
+def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", args=""):
     if not module.check_mode:
         if update:
             args += " -U"
