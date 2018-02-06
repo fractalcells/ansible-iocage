@@ -198,7 +198,7 @@ def _props_to_str(props):
         if _val in ['-','none','on','off']:
             argstr += '{0}={1} '.format(_prop,_val)
         else:
-            argstr += '{0}=\'{1}\' '.format(_prop,_val.replace("'","'\\''"))
+            argstr += '{0}=\'{1}\' '.format(_prop,str(_val).replace("'","'\\''"))
 
     return argstr
 
