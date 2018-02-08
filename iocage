@@ -83,7 +83,10 @@ def _get_iocage_facts(module, iocage_path, argument="all", name=None):
         cmd = "{0} list -hlt".format(iocage_path)
     elif argument == 'releases':
         cmd = "{0} list -hr".format(iocage_path)
+    elif argument == 'init':
+        cmd = "{0} list -h".format(iocage_path)
     elif argument == "all":
+        _init = _get_iocage_facts(module, iocage_path, "init")
         _jails = _get_iocage_facts(module, iocage_path, "jails")
         _templates = _get_iocage_facts(module, iocage_path, "templates")
         _releases = _get_iocage_facts(module, iocage_path, "releases")
@@ -93,8 +96,10 @@ def _get_iocage_facts(module, iocage_path, argument="all", name=None):
 
     rc, state, err = module.run_command(cmd)
 
-    if rc != 0:
+    if rc != 0 and argument != "init":
         module.fail_json(msg="_get_iocage_facts():\ncmd: '{0}' return {1}\nstdout: '{2}'\nstderr: '{3}')".format(cmd, rc, state, err))
+    elif argument == "init":
+        return {}
 
     if argument == 'releases':
         _releases=[]
