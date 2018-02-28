@@ -114,12 +114,12 @@ def _get_iocage_facts(module, iocage_path, argument="all", name=None):
         for l in state.split('\n'):
             if l == "":
                 continue
-            _jid=l.split()[0]
+            _jid=l.split('\t')[0]
             if _jid == '---':
                 # non-iocage jails: skip all
                 break
             elif re.match('(\d+|-)',_jid):
-                (_jid,_name,_boot,_state,_type,_release,_ip4,_ip6,_template) = l.split()
+                (_jid,_name,_boot,_state,_type,_release,_ip4,_ip6,_template) = l.split('\t')
                 if _name != "":
                     _properties = _jail_get_properties(module, iocage_path, _name)
                     _jails[_name] = { "jid": _jid, "name": _name, "state": _state, "properties": _properties }
@@ -144,9 +144,9 @@ def _jail_started(module, iocage_path, name):
 
     st = None
     for l in state.split('\n'):
-        u = l.split()[1]
+        u = l.split('\t')[1]
         if u == name:
-            s = l.split()[3]
+            s = l.split('\t')[3]
             if s == 'up':
                 st = True
                 break
