@@ -33,12 +33,12 @@ iocage: state=template name=mytemplate properties={ip4_addr: 'lo0|10.1.0.1', res
 
 clone existing jail:
 ```
-iocage: state=present name="foo" clone_from="mytemplate" properties={ ip4_addr='lo1|10.1.0.5'i, boot: on, allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1', host_hostname: 'myjail.my.domain' }
+iocage: state=present name="foo" clone_from="mytemplate" properties={ ip4_addr='lo0|10.1.0.5', boot: on, allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1', host_hostname: 'myjail.my.domain' }
 ```
 
 create jail (without cloning):
 ```
-iocage: state=present name="foo" properties={ ip4_addr='lo1|10.1.0.5'i, boot: on, allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1', host_hostname: 'myjail.my.domain' }
+iocage: state=present name="foo" properties={ ip4_addr='lo0|10.1.0.5', boot: on, allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1', host_hostname: 'myjail.my.domain' }
 ```
 
 ensure jail is started:
