@@ -489,7 +489,7 @@ def main():
             module_fail_json(msg="unable to run uname -r ???")
 
         try:
-            release = re.match('(\d+\.\d+\-(RELEASE|RC\d+)).*',out.strip()).group(1)
+            release = re.match('(\d+\.\d+)\-(RELEASE|RC\d+).*',out.strip()).group(1)+"-RELEASE"
         except:
             raise Exception("Release not recogised: {}".format(out))
 
