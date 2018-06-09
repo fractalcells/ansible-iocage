@@ -1,58 +1,78 @@
-ansible-iocell
+ansible-iocage
 ==============
 
-iocell module for ansible.
+[iocage](https://github.com/iocage/iocage) module for ansible. Based on https://github.com/fractalcells/ansible-iocage
+
+Works with new python3 iocage, not anymore with shell version
+
+release is host's one if not specified
+
+release is automatically fetched if missing
 
 Usecases:
 ---------
 
-fetch 10.3-RELEASE:
+fetch 11.0-RELEASE:
 ```
-iocell: state=fetched release=10.3-RELEASE
+iocage: state=fetched release=11.0-RELEASE
 ```
 
+fetch host's RELEASE:
+```
+iocage: state=fetched
+```
 create basejail:
 ```
-iocell: state=basejail tag="foo" release=10.3-RELEASE
+iocage: state=basejail name="foo" release=11.0-RELEASE
 ```
 
 create template:
 ```
-iocell: state=template tag=template release=10.3-RELEASE properties="ip4_addr=lo0|10.1.0.1' resolver='nameserver 127.0.0.1'"
+iocage: state=template name=mytemplate properties={ip4_addr: 'lo0|10.1.0.1', resolver: 'nameserver 127.0.0.1'}
 ```
-
 
 clone existing jail:
 ```
-iocell: state=cloned tag="foo" uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" properties="ip4_addr='lo1|10.1.0.5' boot=on allow_sysvipc=1 pkglist=/path/to/pkglist.txt defaultrouter='10.1.0.1'"
+iocage: state=present name="foo" clone_from="mytemplate" properties={ ip4_addr='lo0|10.1.0.5', boot: on, allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1', host_hostname: 'myjail.my.domain' }
 ```
-start existing jail:
+
+create jail (without cloning):
 ```
-iocell: state=started uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+iocage: state=present name="foo" properties={ ip4_addr='lo0|10.1.0.5', boot: on, allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1', host_hostname: 'myjail.my.domain' }
 ```
-stop existing jail:
+
+ensure jail is started:
 ```
-iocell: state=stopped uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+iocage: state=started name="foo"
 ```
+
+ensure jail is stopped:
+```
+iocage: state=stopped name="foo"
+```
+
 restart existing jail:
 ```
-iocell: state=restarted uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+iocage: state=restarted name="myjail"
 ```
+
 execute command in (running) jail:
 ```
-iocell: state=exec uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" user="root" cmd="service sshd start"
+iocage: state=exec name="myjail" user="root" cmd="service sshd start"
 ```
-force destroy jail:
+
+destroy jail:
 ```
-iocell: state=absent uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f"
+iocage: state=absent name="myjail"
 ```
+
 set attributes on jail:
 ```
-iocell: state=set uuid="05a32718-2de2-11e5-ad68-a710c4a2a00f" properties="istemplate=yes"
+iocage: state=set name="myjail" properties={template: yes}
 ```
 
 Expected results of ansible\_test.yml
 -------------------------------------
 
-PLAY RECAP ***********************************************************************************************
-/                          : ok=28   changed=18   unreachable=0    failed=0
+PLAY RECAP ********************************************************
+<host>             : ok=28   changed=18   unreachable=0    failed=0 

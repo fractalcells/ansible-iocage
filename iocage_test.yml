@@ -1,0 +1,90 @@
+---
+- hosts:
+    - localhost
+
+  become: true
+  become_method: sudo
+
+  roles:
+    - criecm.iocage
+
+  tasks:
+    - name: Check if release 11.0-RELEASE exists
+      iocage: state=fetched release=11.0-RELEASE
+  
+    - name: Check if basejail exists
+      iocage: state=exists name=test_basejail_11_0_RELEASE
+      ignore_errors: true
+  
+#    - name: Check if base jail can be created
+#      iocage: state=basejail name=test_basejail_11_0_RELEASE release=11.0-RELEASE
+#  # Basejails can be made templates
+#    - name: Verify that base jail can be converted
+#      iocage: state=set name=test_basejail_11_0_RELEASE properties={template=no}
+#    - name: Check if clone can be had
+#      iocage: state=cloned name=test_jail clone_from=test_basejail_11_0_RELEASE
+#    - name: Check if cloned test jail can be destroyed
+#      iocage: state=absent name=test_jail
+#    - name: Verify that base jail can be converted back
+#      iocage: state=set name=test_basejail_11_0_RELEASE properties={template=yes}
+
+  # template glue
+    - name: Check if template jail can be created
+      iocage: state=template name=test_template_11_0_RELEASE release=11.0-RELEASE
+      tags:
+      - debug
+    - name: Check if template jail can't be started
+      iocage: state=started name=test_template_11_0_RELEASE force=yes
+      ignore_errors: yes
+    - name: Check if template jail can be force-started
+      iocage: state=started name=test_template_11_0_RELEASE force=yes
+      ignore_errors: yes
+    - name: Check if template jail can be stopped
+      iocage: state=stopped name=test_template_11_0_RELEASE
+      ignore_errors: yes
+#    - name: Check if template jail can be destroyed
+#      iocage: state=absent name=test_template_11_0_RELEASE
+  
+  # check with an absent jail. should produce lots of ignored errors.
+    - name: Check if absent jail can't be destroyed
+      iocage: state=absent name=absent
+      ignore_errors: yes
+    - name: Check if absent jail can't be stopped
+      iocage: state=stopped name=absent
+      ignore_errors: yes
+    - name: Check if absent jail can be restarted
+      iocage: state=restarted name=absent
+      ignore_errors: yes
+    - name: Check if absent jail can be started
+      iocage: state=started name=absent
+      ignore_errors: yes
+  
+  # check everything
+    - name: Check if test jail can be created
+      iocage: state=present name=test_jail
+    - name: Check if test jail can be destroyed
+      iocage: state=absent name=test_jail
+    - name: Check if test jail can be cloned
+      iocage: state=cloned clone_from=test_template_11_0_RELEASE name=test_jail
+    - name: Check if pkg info does not work in not-started test jail
+      iocage: state=pkg name=test_jail cmd="info"
+      ignore_errors: yes
+    - name: Check if test jail can be started
+      iocage: state=started name=test_jail
+    - name: Check if test jail that's started -- is started
+      iocage: state=started name=test_jail
+    - name: Check if exec works in test jail
+      iocage: state=exec name=test_jail cmd="/bin/ls -la /root"
+    - name: Check if pkg info works in test jail
+      iocage: state=pkg name=test_jail cmd="info"
+    - name: Check if test jail can be restarted
+      iocage: state=restarted name=test_jail
+    - name: Check if test jail can be stopped
+      iocage: state=stopped name=test_jail
+    - name: Check if test jail can be started again
+      iocage: state=started name=test_jail
+    - name: Check if test jail can be destroyed
+      iocage: state=absent name=test_jail
+  
+    - name: Check if base jail can be destroyed
+      iocage: state=absent name=test_template_11_0_RELEASE
