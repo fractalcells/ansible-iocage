@@ -21,6 +21,17 @@ fetch host's RELEASE:
 ```
 iocage: state=fetched
 ```
+
+fetch just the base component of host's RELEASE:
+```
+iocage: state=fetched components=base.txz
+```
+
+fetch host's RELEASE, limited to base and doc components:
+```
+iocage: state=fetched components=base.txz,doc.txz
+```
+
 create basejail:
 ```
 iocage: state=basejail name="foo" release=11.0-RELEASE
