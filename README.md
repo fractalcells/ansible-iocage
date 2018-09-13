@@ -28,17 +28,41 @@ iocage: state=basejail name="foo" release=11.0-RELEASE
 
 create template:
 ```
-iocage: state=template name=mytemplate properties={ip4_addr: 'lo0|10.1.0.1', resolver: 'nameserver 127.0.0.1'}
+iocage:
+  state: template
+  name: mytemplate
+  properties:
+    ip4_addr: 'lo0|10.1.0.1'
+    resolver: 'nameserver 127.0.0.1'
 ```
 
 clone existing jail:
 ```
-iocage: state=present name="foo" clone_from="mytemplate" properties={ ip4_addr='lo0|10.1.0.5', boot: on, allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1', host_hostname: 'myjail.my.domain' }
+iocage:
+  state: present
+  name: "foo"
+  clone_from: "mytemplate"
+  properties:
+    ip4_addr: 'lo0|10.1.0.5'
+    boot: "on"
+    allow_sysvipc: 1
+    pkglist: /path/to/pkglist.json
+    defaultrouter: '10.1.0.1'
+    host_hostname: 'myjail.my.domain'
 ```
 
 create jail (without cloning):
 ```
-iocage: state=present name="foo" properties={ ip4_addr='lo0|10.1.0.5', boot: on, allow_sysvipc: 1, pkglist: /path/to/pkglist.txt, defaultrouter: '10.1.0.1', host_hostname: 'myjail.my.domain' }
+iocage:
+  state: present
+  name: "foo"
+  properties:
+    ip4_addr: 'lo0|10.1.0.5'
+    boot: "on"
+    allow_sysvipc: 1
+    pkglist: /path/to/pkglist.json
+    defaultrouter: '10.1.0.1'
+    host_hostname: 'myjail.my.domain'
 ```
 
 ensure jail is started:
@@ -68,11 +92,15 @@ iocage: state=absent name="myjail"
 
 set attributes on jail:
 ```
-iocage: state=set name="myjail" properties={template: yes}
+iocage:
+  state: set
+  name: "myjail"
+  properties:
+    template: "yes"
 ```
 
 Expected results of ansible\_test.yml
 -------------------------------------
 
 PLAY RECAP ********************************************************
-<host>             : ok=28   changed=18   unreachable=0    failed=0 
+<host>             : ok=28   changed=18   unreachable=0    failed=0
