@@ -202,7 +202,7 @@ def _props_to_str(props):
 
     return argstr
 
-def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", components="", args=""):
+def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", components=[], args=""):
     if not module.check_mode:
         if update:
             args += " -U"
@@ -537,7 +537,7 @@ def main():
             changed, _msg = jail_start(module, iocage_path, name, force)
             msgs.append(_msg)
             jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
-            if jails[name]["state"] != "up":
+            if jails[name]["state"] != "up" and not module.check_mode:
                 module.fail_json(msg="Starting jail {} failed with {} :(".format(name,_msg))
         else:
             msgs.append("Jail {0} already started".format(name))
