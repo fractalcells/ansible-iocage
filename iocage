@@ -207,7 +207,8 @@ def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", compo
         if update:
             args += " -U"
         for _component in components:
-            args += " -F {}".format(_component)
+            if _component != "":
+                args += " -F {}".format(_component)
         cmd = "{0} fetch -r {1} {2}".format(iocage_path, release, args)
         rc = 1
         rc, out, err = module.run_command(cmd)
