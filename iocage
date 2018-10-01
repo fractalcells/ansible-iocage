@@ -47,18 +47,47 @@ options:
       description:
           - name of the jail (former uuid)
       required: false
+    pkglist:
+      description:
+          - path to a JSON file containing packages to install. Only applicable when creating a jail.
+      required: false
 author: xmj
 """
 
 EXAMPLES = """
 # create jail (without cloning):
-- iocage: name="foo" state=present properties={ip4_addr: 'lo1|10.1.0.5', boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.json, defaultrouter: '10.1.0.1'}
+- iocage:
+    name: "foo"
+    state: present
+    pkglist: /path/to/pkglist.json
+    properties:
+      ip4_addr: 'lo1|10.1.0.5'
+      boot: 'on'
+      allow_sysvipc: 1
+      defaultrouter: '10.1.0.1'
 
 # create template:
-- iocage: name="tplfoo" state=template properties={ip4_addr: 'lo1|10.1.0.5' boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.json, defaultrouter: '10.1.0.1'"
+- iocage:
+    name: "tplfoo"
+    state: template
+    pkglist: /path/to/pkglist.json
+    properties:
+      ip4_addr: 'lo1|10.1.0.5'
+      boot: 'on'
+      allow_sysvipc: 1
+      defaultrouter: '10.1.0.1'
 
 # create a cloned jail (creates basejail if needed):
-- iocage: name="foo" state=present clone_from="tplfoo" properties={ip4_addr: 'lo1|10.1.0.5', boot: 'on', allow_sysvipc: 1, pkglist: /path/to/pkglist.json, defaultrouter: '10.1.0.1'}
+- iocage:
+    name: "foo"
+    state: present
+    clone_from: "tplfoo"
+    pkglist: /path/to/pkglist.json
+    properties:
+      ip4_addr: 'lo1|10.1.0.5'
+      boot: 'on'
+      allow_sysvipc: 1
+      defaultrouter: '10.1.0.1'
 
 # start existing jail:
 - iocage: name="foo" state=started
@@ -370,17 +399,10 @@ def jail_set(module, iocage_path, name, properties={}):
 
     return _changed, _msg
 
-def jail_create(module, iocage_path, name=None, properties={}, clone_from_name=None, clone_from_template=None, release=None, basejail=False):
+def jail_create(module, iocage_path, name=None, properties={}, clone_from_name=None, clone_from_template=None, release=None, basejail=False, pkglist=None):
     rc = 1
     out = ""
     _msg = ""
-
-    opts = ""
-    if 'release' in properties:
-        opts += " -r {0}".format(properties["release"])
-        
-    if 'pkglist' in properties:
-        opts += " -p {0}".format(properties["pkglist"])
 
     if clone_from_name == None and clone_from_template == None:
         if basejail:
@@ -388,6 +410,9 @@ def jail_create(module, iocage_path, name=None, properties={}, clone_from_name=N
 
         else:
             cmd = "{0} create -r {2} -n {1} {3}".format(iocage_path, name, release, _props_to_str(properties))
+
+        if pkglist:
+            cmd += " --pkglist=" + pkglist
 
     elif clone_from_name:
         cmd = "{0} clone {1} -n {2} {3}".format(iocage_path, clone_from_name, name, _props_to_str(properties))
@@ -451,8 +476,9 @@ def main():
         argument_spec    = dict(
             state        = dict(default="facts", choices=["basejail", "template", "cloned", "started", "stopped", "restarted", "fetched", "exec", "pkg", "exists", "absent", "set","present","facts"], required=False),
             name         = dict(default="", required=False),
-            stdout         = dict(default="", required=False),
-            stderr         = dict(default="", required=False),
+            pkglist      = dict(default=None, required=False),
+            stdout       = dict(default="", required=False),
+            stderr       = dict(default="", required=False),
             properties   = dict(default={}, required=False, type="dict"),
             args         = dict(default="", required=False),
             force        = dict(default="", required=False),
@@ -478,6 +504,7 @@ def main():
     release = p["release"]
     update = p["update"]
     upgrade = False
+    pkglist = p["pkglist"]
 
     if not release or release == "":
         # if name and not (upgrade):
@@ -614,7 +641,7 @@ def main():
                     module.fail_json(msg="unable to create jail {0}\nbasejail {1} doesn't exist".format(name,clone_from))
 
         if not name in facts["iocage_templates"] and not name in facts["iocage_jails"]:
-            name, changed, _msg = jail_create(module, iocage_path, name, properties, clone_from_name, clone_from_template, release, do_basejail)
+            name, changed, _msg = jail_create(module, iocage_path, name, properties, clone_from_name, clone_from_template, release, do_basejail, pkglist)
             msgs.append(_msg)
         else:
             changed=False
