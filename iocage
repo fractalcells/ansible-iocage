@@ -198,7 +198,7 @@ def _props_to_str(props):
         if _val in ['-','none','on','off']:
             argstr += '{0}={1} '.format(_prop,_val)
         else:
-            argstr += '{0}=\'{1}\' '.format(_prop,str(_val).replace("'","'\\''"))
+            argstr += '{0}=\'{1}\' '.format(_prop,str(_val))
 
     return argstr
 
@@ -343,21 +343,16 @@ def jail_set(module, iocage_path, name, properties={}):
             else:
                 propval='off'
         else:
-            module.fail_json(msg="Unable to set attribute {0} to {1} for jail {2}".format(p,str(_val).replace("'","'\\''"),name))
+            module.fail_json(msg="Unable to set attribute {0} to {1} for jail {2}".format(_property,str(_val).replace("'","'\\''"),name))
 
         if 'CHECK_NEW_JAIL' in _existing_props or ( _property in _existing_props and _existing_props[_property] != propval and propval != False):
-            if type(_val) is str and _val != '':
-                # escaping quotes (if any) to pass string to shell (ex: "|" case)
-                propval = '\\"{0}\\"'.format(_val)
-
             _props_to_be_changed[_property] = propval
 
     if len(_props_to_be_changed) > 0:
-        for p in _props_to_be_changed:
-            cmd += '{0} set {1}{2}; '.format(iocage_path, _props_to_str({p: _props_to_be_changed[p]}), name)
+        cmd = '{0} set {1} {2}'.format(iocage_path, _props_to_str(_props_to_be_changed), name)
 
         if not module.check_mode:
-            rc, out, err = module.run_command("/bin/sh -c '{0}'".format(cmd))
+            rc, out, err = module.run_command(cmd)
             if not rc == 0:
                 module.fail_json(msg="Attributes could not be set on jail '{0}'.\ncmd:\n{1}\nstdout:\n{2}\nstderr:\n{3}".format(name, cmd, out, err))
 
@@ -651,13 +646,13 @@ def main():
                 facts["iocage_jails"][name] = _get_iocage_facts(module,iocage_path,"jails",name)
 
     elif p["state"] == "absent":
-        if jails[name]['state'] == "up":
-            changed, _msg = jail_stop(module, iocage_path, name)
+        if name in jails:
+            if jails[name]['state'] == "up":
+                changed, _msg = jail_stop(module, iocage_path, name)
+                msgs.append(_msg)
+            name, changed, _msg = jail_destroy(module, iocage_path, name)
             msgs.append(_msg)
-
-        name, changed, _msg = jail_destroy(module, iocage_path, name)
-        msgs.append(_msg)
-        del(jails[name])
+            del(jails[name])
         if name in facts["iocage_jails"]:
             del(facts["iocage_jails"][name])
         if name in facts["iocage_templates"]:
