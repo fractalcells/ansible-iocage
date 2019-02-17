@@ -231,12 +231,13 @@ def _props_to_str(props):
 
     return argstr
 
-def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", components="", args=""):
+def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", components=[], args=""):
     if not module.check_mode:
         if update:
             args += " -U"
         for _component in components:
-            args += " -F {}".format(_component)
+            if _component != "":
+                args += " -F {}".format(_component)
         cmd = "{0} fetch -r {1} {2}".format(iocage_path, release, args)
         rc = 1
         rc, out, err = module.run_command(cmd)
@@ -512,20 +513,6 @@ def main():
     upgrade = False
     pkglist = p["pkglist"]
 
-    if not release or release == "":
-        # if name and not (upgrade):
-        #     _jail_props = _jail_get_properties(module, iocage_path, name)
-        #     release = _jail_props["release"]
-        #else:
-        rc, out, err = module.run_command("uname -r")
-        if rc != 0:
-            module_fail_json(msg="unable to run uname -r ???")
-
-        try:
-            release = re.match('(\d+\.\d+)\-(RELEASE|RC\d+).*',out.strip()).group(1)+"-RELEASE"
-        except:
-            raise Exception("Release not recogised: {}".format(out))
-
     msgs = []
     changed = False
     out = ""
@@ -542,29 +529,43 @@ def main():
     if p["state"] == "facts":
         module.exit_json(changed=False, ansible_facts=facts)
 
-    if p["state"] not in [ "fetched" ]:
-        if not name or name == "":
-            module.fail_json(msg="No name given.")
+    ### Input validation
 
-        # states that need name of jail
-        if not name and p["state"] in [ "started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent" ]:
-            module.fail_json(msg="name needed for state ".format(p["state"]))
+    # states that need name of jail
+    if not name and p["state"] in [ "started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent" ]:
+        module.fail_json(msg="name needed for state ".format(p["state"]))
 
-        # need existing jail
-        if p["state"] in [ "started", "stopped", "restarted", "set", "exec", "pkg", "exists" ]:
-            if name not in facts["iocage_jails"] and name not in facts["iocage_templates"]:
-                module.fail_json(msg="Jail '{0}' doesn't exist".format(name))
+    # states that need release defined
+    if p["state"] in [ "basejail", "template", "fetched", "present" ] or p["update"]:
+        if not release or release == "":
+            # if name and not (upgrade):
+            #     _jail_props = _jail_get_properties(module, iocage_path, name)
+            #     release = _jail_props["release"]
+            #else:
+            rc, out, err = module.run_command("uname -r")
+            if rc != 0:
+                module_fail_json(msg="unable to run uname -r ???")
 
-        # states that need running jail
-        if p["state"] in [ "exec", "pkg" ] and facts["iocage_jails"][name]["state"] != "up":
-            module.fail_json(msg="Jail '{0}' not running".format(name))
+            try:
+                release = re.match('(\d+\.\d+)\-(RELEASE|RC\d+).*',out.strip()).group(1)+"-RELEASE"
+            except:
+                raise Exception("Release not recognised: {}".format(out))
+
+    # need existing jail
+    if p["state"] in [ "started", "stopped", "restarted", "set", "exec", "pkg", "exists" ]:
+        if name not in facts["iocage_jails"] and name not in facts["iocage_templates"]:
+            module.fail_json(msg="Jail '{0}' doesn't exist".format(name))
+
+    # states that need running jail
+    if p["state"] in [ "exec", "pkg" ] and facts["iocage_jails"][name]["state"] != "up":
+        module.fail_json(msg="Jail '{0}' not running".format(name))
 
     if p["state"] == "started":
         if jails[name]["state"] != "up":
             changed, _msg = jail_start(module, iocage_path, name, force)
             msgs.append(_msg)
             jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
-            if jails[name]["state"] != "up":
+            if jails[name]["state"] != "up" and not module.check_mode:
                 module.fail_json(msg="Starting jail {} failed with {} :(".format(name,_msg))
         else:
             msgs.append("Jail {0} already started".format(name))
@@ -619,7 +620,7 @@ def main():
         clone_from_template = None
         jail_exists = False
 
-        if not release in facts["iocage_releases"]:
+        if p["state"] != "cloned" and release not in facts["iocage_releases"]:
             release, _release_changed, _release_msg = release_fetch(module,iocage_path,update,release, components, args)
             if _release_changed:
                 facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
