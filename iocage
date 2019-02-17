@@ -603,6 +603,7 @@ def main():
 
     elif p["state"] == "set":
         changed, _msg = jail_set(module, iocage_path, name, properties)
+        msgs.append(_msg)
         jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
 
     elif p["state"] in ["present", "cloned", "template", "basejail"]:
