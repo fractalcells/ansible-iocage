@@ -110,8 +110,10 @@ iocage:
     template: "yes"
 ```
 
-Expected results of ansible\_test.yml
--------------------------------------
-
-PLAY RECAP ********************************************************
-<host>             : ok=28   changed=18   unreachable=0    failed=0
+Tests
+-----
+```
+ansible-playbook -M . iocage_test.yml
+```
+PLAY RECAP ****************************************************************
+localhost                  : ok=23   changed=11   unreachable=0    failed=0
