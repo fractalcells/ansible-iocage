@@ -1,7 +1,9 @@
 ansible-iocage
 ==============
 
-[iocage](https://github.com/iocage/iocage) module for ansible. Based on https://github.com/fractalcells/ansible-iocage
+[iocage](https://github.com/iocage/iocage) module for ansible.
+
+Home on https://github.com/fractalcells/ansible-iocage
 
 Works with new python3 iocage, not anymore with shell version
 
