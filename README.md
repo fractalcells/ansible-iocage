@@ -1,7 +1,9 @@
 ansible-iocage
 ==============
 
-[iocage](https://github.com/iocage/iocage) module for ansible. Based on https://github.com/fractalcells/ansible-iocage
+[iocage](https://github.com/iocage/iocage) module for ansible.
+
+Home on https://github.com/fractalcells/ansible-iocage
 
 Works with new python3 iocage, not anymore with shell version
 
@@ -21,6 +23,17 @@ fetch host's RELEASE:
 ```
 iocage: state=fetched
 ```
+
+fetch just the base component of host's RELEASE:
+```
+iocage: state=fetched components=base.txz
+```
+
+fetch host's RELEASE, limited to base and doc components:
+```
+iocage: state=fetched components=base.txz,doc.txz
+```
+
 create basejail:
 ```
 iocage: state=basejail name="foo" release=11.0-RELEASE
@@ -99,8 +112,10 @@ iocage:
     template: "yes"
 ```
 
-Expected results of ansible\_test.yml
--------------------------------------
-
-PLAY RECAP ********************************************************
-<host>             : ok=28   changed=18   unreachable=0    failed=0
+Tests
+-----
+```
+ansible-playbook -M . iocage_test.yml
+```
+PLAY RECAP ****************************************************************
+localhost                  : ok=23   changed=11   unreachable=0    failed=0
