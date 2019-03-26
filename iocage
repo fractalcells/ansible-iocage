@@ -647,8 +647,10 @@ def main():
             name, changed, _msg = jail_create(module, iocage_path, name, properties, clone_from_name, clone_from_template, release, do_basejail, pkglist)
             msgs.append(_msg)
         else:
-            changed=False
+            changed, _msg = jail_set(module, iocage_path, name, properties)
             msgs.append("{} already exists".format(name))
+            if changed:
+                msgs.append(_msg)
 
         if p["update"]:
             if not release in facts["iocage_releases"]:
