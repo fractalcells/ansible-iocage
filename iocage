@@ -486,7 +486,7 @@ def main():
             cmd          = dict(default="", required=False),
             clone_from   = dict(default="", required=False),
             release      = dict(default="", required=False),
-            update       = dict(default="", required=False),
+            update       = dict(default="", required=False, type='bool'),
             components   = dict(default="", aliases=["files","component"], required=False, type='list')),
         supports_check_mode = True
     )
