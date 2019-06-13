@@ -659,7 +659,7 @@ def main():
                     _msg += _release_msg
                     facts["iocage_releases"] = _get_iocage_facts(module,iocage_path,"releases")
 
-            release, changed, _msg = jail_update(module, iocage_path, name, release)
+            release, changed, _msg = jail_update(module, iocage_path, name)
             msgs.append(_msg)
 
 #        # re-set properties (iocage missing them on creation - iocage-sh bug)
