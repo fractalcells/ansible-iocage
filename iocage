@@ -175,7 +175,7 @@ def _jail_started(module, iocage_path, name):
     for l in state.split('\n'):
         u = l.split('\t')[1]
         if u == name:
-            s = l.split('\t')[3]
+            s = l.split('\t')[2]
             if s == 'up':
                 st = True
                 break
@@ -183,7 +183,7 @@ def _jail_started(module, iocage_path, name):
                 st = False
                 break
             else:
-                module.fail_json(msg="Jail {0} unknows state: {1}".format(name, l))
+                module.fail_json(msg="Jail {0} unknown state: {1}".format(name, l))
 
     return st
 
