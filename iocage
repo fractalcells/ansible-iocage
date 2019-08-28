@@ -175,7 +175,7 @@ def _jail_started(module, iocage_path, name):
     for l in state.split('\n'):
         u = l.split('\t')[1]
         if u == name:
-            s = l.split('\t')[3]
+            s = l.split('\t')[2]
             if s == 'up':
                 st = True
                 break
@@ -183,7 +183,7 @@ def _jail_started(module, iocage_path, name):
                 st = False
                 break
             else:
-                module.fail_json(msg="Jail {0} unknows state: {1}".format(name, l))
+                module.fail_json(msg="Jail {0} unknown state: {1}".format(name, l))
 
     return st
 
@@ -224,10 +224,14 @@ def _props_to_str(props):
         _val = props[_prop]
         if _val == '-' or _val == '' or not _val:
             continue
-        if _val in ['-','none','on','off']:
+        if _val in ['on', True]:
+            argstr += '{0}=1 '.format(_prop)
+        elif _val in ['off', False]:
+            argstr += '{0}=0 '.format(_prop)
+        elif _val in ['-','none']:
             argstr += '{0}={1} '.format(_prop,_val)
         else:
-            argstr += '{0}=\'{1}\' '.format(_prop,str(_val))
+            argstr += '{0}="{1}" '.format(_prop,str(_val))
 
     return argstr
 
@@ -357,32 +361,43 @@ def jail_set(module, iocage_path, name, properties={}):
             continue
         if _existing_props[_property] == '-' and not properties[_property]:
             continue
+        if _property == "template":
+            continue
+
         propval=None
         _val = properties[_property]
-        if type(_val) is int:
-            propval = _val
-        elif type(_val) is str:
+        _oval = _existing_props[_property]
+        if _val in [0,'off',False]:
+            propval = 0
+        elif _val in [1,'on',True]:
+            propval = 1
+        elif isinstance(_oval,str):
             if _val == '':
                 propval = 'none'
             else:
                 propval = '{0}'.format(_val)
-        elif type(_val) is bool:
-            if _val:
-                propval='on'
-            else:
-                propval='off'
         else:
             module.fail_json(msg="Unable to set attribute {0} to {1} for jail {2}".format(_property,str(_val).replace("'","'\\''"),name))
 
-        if 'CHECK_NEW_JAIL' in _existing_props or ( _property in _existing_props and _existing_props[_property] != propval and propval != False):
+        if 'CHECK_NEW_JAIL' in _existing_props or ( _property in _existing_props.keys() and str(_existing_props[_property]) != str(propval) ) and propval != None:
             _props_to_be_changed[_property] = propval
 
     if len(_props_to_be_changed) > 0:
+        need_restart = False
+        for p in _props_to_be_changed.keys():
+            if p in ['ip4_addr','ip6_addr','template','interfaces','vnet','host_hostname']:
+                need_restart = _jail_started(module, iocage_path, name)
+
         cmd = '{0} set {1} {2}'.format(iocage_path, _props_to_str(_props_to_be_changed), name)
 
         if not module.check_mode:
+            if need_restart:
+                jail_stop(module, iocage_path, name)
             rc, out, err = module.run_command(cmd)
-            if not rc == 0:
+            if need_restart:
+                jail_start(module, iocage_path, name)
+
+            if not rc == 0 or ( rc == 1 and "is already a jail!" in err ):
                 module.fail_json(msg="Attributes could not be set on jail '{0}'.\ncmd:\n{1}\nstdout:\n{2}\nstderr:\n{3}".format(name, cmd, out, err))
 
             _msg = "properties {0} were set on jail '{1}' with cmd={2}.".format(str(_props_to_be_changed.keys()) ,name, cmd)
@@ -390,7 +405,7 @@ def jail_set(module, iocage_path, name, properties={}):
 
         else:
             _msg = "properties {0} would have been changed for jail {1} with command {2}".format(str(_props_to_be_changed.keys()), name, cmd)
-
+            _msg += str(_props_to_be_changed)
         _changed = True
 
     else:
@@ -569,9 +584,10 @@ def main():
         if jails[name]["state"] == "up":
             changed, _msg = jail_stop(module, iocage_path, name)
             msgs.append(_msg)
-            jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
-            if jails[name]["state"] != "down":
-                module.fail_json(msg="Stopping jail {} failed with {} :(".format(name,_msg))
+            if not module.check_mode:
+                jails[name] = _get_iocage_facts(module,iocage_path,"jails",name)
+                if jails[name]["state"] != "down":
+                    module.fail_json(msg="Stopping jail {} failed with {} :(".format(name,_msg))
         else:
             msgs.append("Jail {0} already stopped".format(name))
 
@@ -687,8 +703,7 @@ def main():
         if name in facts["iocage_templates"]:
             del(facts["iocage_templates"][name])
 
-    name = name or ""
-    module.exit_json(changed=changed, msg=", ".join(msgs), name=name, ansible_facts=facts, stdout=out, stderr=err)
+    module.exit_json(changed=changed, msg=", ".join(msgs), name="", ansible_facts=facts, stdout=out, stderr=err)
 
 # import module snippets
 from ansible.module_utils.basic import *
