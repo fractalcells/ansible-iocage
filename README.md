@@ -55,11 +55,11 @@ iocage:
   state: present
   name: "foo"
   clone_from: "mytemplate"
+  pkglist: /path/to/pkglist.json
   properties:
     ip4_addr: 'lo0|10.1.0.5'
     boot: "on"
     allow_sysvipc: 1
-    pkglist: /path/to/pkglist.json
     defaultrouter: '10.1.0.1'
     host_hostname: 'myjail.my.domain'
 ```
@@ -69,11 +69,11 @@ create jail (without cloning):
 iocage:
   state: present
   name: "foo"
+  pkglist: /path/to/pkglist.json
   properties:
     ip4_addr: 'lo0|10.1.0.5'
     boot: "on"
     allow_sysvipc: 1
-    pkglist: /path/to/pkglist.json
     defaultrouter: '10.1.0.1'
     host_hostname: 'myjail.my.domain'
 ```
