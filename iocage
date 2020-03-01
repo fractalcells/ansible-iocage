@@ -300,7 +300,7 @@ def jail_exec(module, iocage_path, name, user="root", cmd='/usr/bin/true'):
     err = ""
     _msg = ""
     if not module.check_mode:
-        rc, out, err = module.run_command("{0} exec -u {1} {2} {3}".format(iocage_path, user, name, cmd))
+        rc, out, err = module.run_command("{0} exec -u {1} {2} -- {3}".format(iocage_path, user, name, cmd))
         if not rc == 0:
             module.fail_json(msg="Command '{0}' could not be executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, name, out, err))
         _msg = "Command '{0}' was executed in jail '{1}'.\nstdout:\n{2}\nstderr:\n{3}".format(cmd, name, out, err)
