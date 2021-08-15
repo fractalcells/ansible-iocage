@@ -438,7 +438,7 @@ def _jail_get_properties(module, iocage_path, name):
 
     rc = 1
     out = ""
-    if name and name != "":
+    if name is not None and name != "":
         properties = {}
         cmd = "{0} get all {1}".format(iocage_path, name)
         rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
@@ -636,11 +636,9 @@ def run_module():
     module_args = dict(
         state=dict(type='str',
                    default="facts",
-
                    choices=["basejail", "thickjail", "template", "present", "cloned", "started",
                             "stopped", "restarted", "fetched", "exec", "pkg", "exists", "absent",
                             "set", "facts"],),
-
         name=dict(type='str'),
         pkglist=dict(type='path'),
         properties=dict(type='dict'),
@@ -669,8 +667,6 @@ def run_module():
     release = p["release"]
     update = p["update"]
     components = p["components"]
-    # local variable 'upgrade' is assigned to but never used [F841]
-    # upgrade = False
     pkglist = p["pkglist"]
 
     msgs = []
