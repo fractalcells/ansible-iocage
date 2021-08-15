@@ -94,6 +94,8 @@ requirements:
   - py38-iocage >= 1.2_9
 notes:
   - Supports C(check_mode).
+  - The module always creates facts B(iocage_releases), B(iocage_templates), and B(iocage_jails)
+  - There is no mandatory option.
 seealso:
   - name: iocage - A FreeBSD Jail Manager
     description: iocage 1.2 documentation
@@ -106,7 +108,17 @@ author:
   - Vladimir Botka (@vbotka)
 '''
 
-EXAMPLES = '''
+EXAMPLES = r'''
+- name: Create all iocage_* ansible_facts
+  iocage:
+
+- name: Display lists of bases, names of templates, and names of jails
+  debug:
+    msg: |-
+      {{ iocage_releases }}
+      {{ iocage_templates.keys()|list }}
+      {{ iocage_jails.keys()|list }}
+
 - name: Create jail without cloning
   iocage:
     name: foo
@@ -169,6 +181,24 @@ EXAMPLES = '''
 '''
 
 RETURN = r'''
+iocage_releases:
+    description: List of all bases.
+    returned: always
+    type: list
+    elements: str
+    sample: ['13.0-RELEASE']
+
+iocage_templates:
+    description: Dictionary of all templates.
+    returned: always
+    type: dict
+    sample: {}
+
+iocage_jails:
+    description: Dictionary of all jails.
+    returned: always
+    type: dict
+    sample: {}
 '''
 
 import re
@@ -190,7 +220,6 @@ def _get_iocage_facts(module, iocage_path, argument="all", name=None):
                init="list -h")
 
     if argument == "all":
-        # local variable '_init' is assigned to but never used [F841]
         # _init = _get_iocage_facts(module, iocage_path, "init")
         _jails = _get_iocage_facts(module, iocage_path, "jails")
         _templates = _get_iocage_facts(module, iocage_path, "templates")
@@ -218,7 +247,6 @@ def _get_iocage_facts(module, iocage_path, argument="all", name=None):
         return _releases
 
     _jails = {}
-    # module.fail_json(msg=state)
     try:
         for line in state.split('\n'):
             if line == "":
