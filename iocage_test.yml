@@ -5,8 +5,11 @@
   become_method: sudo
 
   vars:
+
+    jname: test_jail
     release: 13.0-RELEASE
     label: 13_0_RELEASE
+    basejail: "test_basejail_{{ label }}"
     debug: false
 
   tasks:
@@ -28,6 +31,24 @@
             var: ansible_failed_result
       tags: fetch
 
+    # base_create - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - name: "Check if test_basejai_{{ label }} can be created"
+      block:
+        - name: "Check if test_basejai_{{ label }} can be created"
+          iocage:
+            state: basejail
+            name: "{{ basejail }}"
+            release: "{{ release }}"
+          register: result
+        - debug:
+            var: result
+          when: debug|bool
+      rescue:
+        - debug:
+            var: ansible_failed_result
+      tags: base_create
+
     # base_exists - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - name: "Check if test_basejai_{{ label }} exists"
@@ -35,7 +56,7 @@
         - name: "Check if test_basejai_{{ label }} exists"
           iocage:
             state: exists
-            name: "test_basejail_{{ label }}"
+            name: "{{ basejail }}"
           register: result
           tags: exist
         - debug:
@@ -51,24 +72,6 @@
         fail_msg: "test_basejail_{{ label }} does not exist"
       tags: base_exists
 
-    # base_create - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: "Check if test_basejai_{{ label }} can be created"
-      block:
-        - name: "Check if test_basejai_{{ label }} can be created"
-          iocage:
-            state: basejail
-            name: "test_basejail_{{ label }}"
-            release: "{{ release }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
-      tags: base_create
-
     # base_set - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - name: Verify that base jail can be converted
@@ -76,7 +79,7 @@
         - name: Verify that base jail can be converted
           iocage:
             state: set
-            name: "test_basejail_{{ label }}"
+            name: "{{ basejail }}"
             properties:
               template: 'no'
           register: result
@@ -95,7 +98,7 @@
         - name: Check if basejail can be cloned
           iocage:
             state: cloned
-            name: test_jail
+            name: "{{ jname }}"
             clone_from: "test_basejail_{{ label }}"
           register: result
         - debug:
@@ -113,7 +116,7 @@
         - name: Check if cloned test jail can be destroyed
           iocage:
             state: absent
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -130,7 +133,7 @@
         - name: Verify that base jail can be converted back
           iocage:
             state: set
-            name: "test_basejail_{{ label }}"
+            name: "{{ basejail }}"
             properties:
               template: true
           register: result
@@ -312,7 +315,7 @@
         - name: Check if test jail can be created
           iocage:
             state: present
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -334,7 +337,7 @@
         - name: Check if test jail can be destroyed
           iocage:
             state: absent
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -357,7 +360,7 @@
           iocage:
             state: cloned
             clone_from: "test_template_{{ label }}"
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -379,7 +382,7 @@
         - name: Check if pkg info does not work in not-started test jail
           iocage:
             state: pkg
-            name: test_jail
+            name: "{{ jname }}"
             cmd: info
           register: result
         - debug:
@@ -401,7 +404,7 @@
         - name: Check if test jail can be started
           iocage:
             state: started
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -422,7 +425,7 @@
       block:
         - iocage:
             state: started
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -443,7 +446,7 @@
         - name: Check if exec works in test jail
           iocage:
             state: exec
-            name: test_jail
+            name: "{{ jname }}"
             cmd: "/bin/ls -la /root"
           register: result
         - debug:
@@ -465,7 +468,7 @@
       block:
         - iocage:
             state: restarted
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -485,7 +488,7 @@
       block:
         - iocage:
             state: stopped
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -506,7 +509,7 @@
       block:
         - iocage:
             state: started
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
@@ -527,7 +530,7 @@
       block:
         - iocage:
             state: absent
-            name: test_jail
+            name: "{{ jname }}"
           register: result
         - debug:
             var: result
