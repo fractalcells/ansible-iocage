@@ -1,5 +1,6 @@
 ---
-- hosts: test_iocage
+- hosts:
+    - localhost
   gather_facts: false
   become: true
   become_method: sudo
