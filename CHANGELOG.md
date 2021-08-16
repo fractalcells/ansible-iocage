@@ -2,6 +2,23 @@ CHANGELOG
 =========
 
 
+
+iocage.py (2020-08-16)
+----------------------
+
+* Use f-strings everywhere.
+
+* Fix create cmd strings. -r -n values were interchanged.	
+
+* Keep BSD license.
+
+* Facts updated in doc.
+
+* Add (c) 2021 vbotka@gamil.com to the license.
+
+* All contibutors added to the authors in doc.
+
+
 iocage_test.yml (2020-08-11)
 ----------------------------
 
