@@ -97,6 +97,7 @@ notes:
   - Supports C(check_mode).
   - The module always creates facts B(iocage_releases), B(iocage_templates), and B(iocage_jails)
   - There is no mandatory option.
+  - Returns B(module_args) when debugging is set B(ANSIBLE_DEBUG=true)
 seealso:
   - name: iocage - A FreeBSD Jail Manager
     description: iocage 1.2 documentation
@@ -191,26 +192,34 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-iocage_releases:
-    description: List of all bases.
-    returned: always
-    type: list
-    elements: str
-    sample: ['13.0-RELEASE']
-
-iocage_templates:
-    description: Dictionary of all templates.
-    returned: always
-    type: dict
-    sample: {}
-
-iocage_jails:
-    description: Dictionary of all jails.
-    returned: always
-    type: dict
-    sample: {}
+ansible_facts:
+  description: Facts to add to ansible_facts.
+  returned: always
+  type: dict
+  contains:
+    iocage_releases:
+      description: List of all bases.
+      returned: always
+      type: list
+      elements: str
+      sample: ['13.0-RELEASE']
+    iocage_templates:
+      description: Dictionary of all templates.
+      returned: always
+      type: dict
+      sample: {}
+    iocage_jails:
+      description: Dictionary of all jails.
+      returned: always
+      type: dict
+      sample: {}
+module_args:
+  description: Information on how the module was invoked.
+  returned: debug
+  type: dict
 '''
 
+import json
 import re
 
 from ansible.module_utils.basic import AnsibleModule
@@ -903,11 +912,13 @@ def run_module():
 
     result = dict(changed=changed,
                   msg=", ".join(msgs),
-                  name="",
                   ansible_facts=facts,
                   stdout=out,
                   stderr=err,
                   )
+    if module._debug:
+        result['module_args'] = f"{(json.dumps(module.params, indent=4))}"
+
     module.exit_json(**result)
 
 
