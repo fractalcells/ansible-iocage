@@ -725,7 +725,15 @@ def run_module():
         jails[u] = facts["iocage_templates"][u]
 
     if p["state"] == "facts":
-        module.exit_json(changed=False, ansible_facts=facts)
+        result = dict(changed=changed,
+                      msg=", ".join(msgs),
+                      ansible_facts=facts,
+                      stdout=out,
+                      stderr=err,
+                      )
+        if module._debug:
+            result['module_args'] = f"{(json.dumps(module.params, indent=4))}"
+        module.exit_json(**result)
 
     # Input validation
 
