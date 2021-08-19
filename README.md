@@ -195,9 +195,11 @@ Tests
 ```
 ansible-playbook -M . iocage_test.yml
 ```
+
+```sh
 PLAY RECAP ********************************************************************
 localhost: ok=11 changed=0 unreachable=0 failed=0 skipped=8 rescued=3 ignored=0
-
+```
 
 See also
 --------
