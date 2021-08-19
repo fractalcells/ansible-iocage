@@ -65,7 +65,7 @@ gives
 
 ```yaml
 
-shell> ansible-playbook iocage.yml
+shell> ansible-playbook playbook.yml
   ...
   msg: |-
     iocage_releases = ['13.0-RELEASE']
