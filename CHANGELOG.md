@@ -5,7 +5,9 @@ CHANGELOG
 2020-08-19
 ----------
 
+* Add sanity test to iocage_test.yml	
 * Update README.md
+* Update docs requirements.
 * Delete iocage. Was replaced by iocage.py
 
 
