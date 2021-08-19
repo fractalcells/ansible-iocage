@@ -92,7 +92,8 @@ options:
       elements: path
       aliases: [files, component]
 requirements:
-  - py38-iocage >= 1.2_9
+  - lang/python >= 3.6
+  - sysutils/iocage
 notes:
   - Supports C(check_mode).
   - The module always creates facts B(iocage_releases), B(iocage_templates), and B(iocage_jails)

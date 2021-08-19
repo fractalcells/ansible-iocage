@@ -20,6 +20,14 @@ This module is an Ansible 'wrapper' of the iocage command.
 * Release is automatically fetched if missing
 
 
+Requirements (on the node)
+--------------------------
+
+* lang/python >= 3.6
+
+* sysutils/iocage
+
+
 Install
 -------
 
