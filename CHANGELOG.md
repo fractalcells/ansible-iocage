@@ -2,20 +2,20 @@ CHANGELOG
 =========
 
 
+2020-08-19
+----------
+
+* Update README.md
+* Delete iocage. Was replaced by iocage.py
+
 
 iocage.py (2020-08-16)
 ----------------------
 
 * Use f-strings everywhere.
-
 * Fix create cmd strings. -r -n values were interchanged.	
-
-* Keep BSD license.
-
 * Facts updated in doc.
-
-* Add (c) 2021 vbotka@gamil.com to the license.
-
+* Add (c) 2021 vbotka@gmail.com to the license.
 * All contibutors added to the authors in doc.
 
 
@@ -35,22 +35,6 @@ iocage.py (2020-08-11)
 ----------------------
 
 * Copy iocage to iocage.py
-
-* Changed license to GPLv3
-
-  # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-
-  ansible-test sanity ERROR: plugins/modules/system/iocage.py:0:0:
-  missing-gplv3-license: GPLv3 license header not found in the first
-  20 lines of the module
-
-  https://docs.ansible.com/ansible/latest/dev_guide/developing_modules_in_groups.html#creating-a-new-collection
-  "All other files shipped with Ansible, including all modules, must
-  be licensed under the GPL license (GPLv3 or later)."
-
-* Add 'yes'/'no' to the list of valid Booleans
-  example:
-  if _val in ['yes', 'on', True]:
 
 * Add function _command_fail
 
@@ -91,3 +75,6 @@ iocage.py (2020-08-11)
   _msg = "Jail {0} is already absent.".format(name)
 
 * Add rc to the result of state=exec
+
+
+# EOF
