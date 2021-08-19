@@ -615,7 +615,8 @@ def jail_create(module, iocage_path, name=None, properties=None, clone_from_name
         cmd = f"{iocage_path} create -t {clone_from_template} -n {name} {_props_to_str(properties)}"
 
     if not module.check_mode:
-        rc, out, err = module.run_command(cmd)
+        rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
+                                          errors='surrogate_or_strict')
         if not rc == 0:
             _command_fail(module, f"Jail '{name}' could not be created.", cmd, rc, out, err)
         _msg += f"Jail '{name}' was created with properties {str(properties)}.\n\n{cmd}"
