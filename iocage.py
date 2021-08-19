@@ -740,7 +740,7 @@ def run_module():
 
     # states that need name of jail
     if name is None and p["state"] in ["started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent"]:
-        module.fail_json(msg="name needed for state %s" % (p["state"]))
+        module.fail_json(msg=f"name needed for state {p['state']}")
 
     # states that need release defined
     if p["state"] in ["basejail", "thickjail", "template", "fetched", "present"] or p["update"]:
