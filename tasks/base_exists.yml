@@ -1,0 +1,18 @@
+---
+- name: "Check if test_basejai_{{ label }} exists"
+  block:
+    - name: "Check if test_basejai_{{ label }} exists"
+      iocage:
+        state: exists
+        name: "{{ basejail }}"
+      register: result
+    - debug:
+        var: result
+      when: debug|bool
+  rescue:
+    - debug:
+        var: ansible_failed_result
+- assert:
+    that:
+      - "\"doesn't exist\" not in result.msg"
+    fail_msg: "test_basejail_{{ label }} does not exist"

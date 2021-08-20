@@ -1,6 +1,6 @@
 ---
-- hosts:
-    - localhost
+
+- hosts: localhost
   gather_facts: false
   become: true
   become_method: sudo
@@ -17,607 +17,78 @@
 
   tasks:
 
-    # sanity - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # setup - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    - block:
-        - ansible.builtin.setup:
-            gather_subset: min
-        - ansible.builtin.debug:
-            var: ansible_python.executable
-          when: debug|bool
-        - ansible.builtin.assert:
-            that:
-              - ansible_python.version.major >= python_required.0|int
-              - ansible_python.version.micro >= python_required.1|int
-            fail_msg: "Pyhton >= {{ python_required }} is required on the node."
-      tags: [sanity, sanity_python]
-
-    - block:
-        - ansible.builtin.command:
-            cmd: iocage --version
-          register: result
-        - ansible.builtin.debug:
-            var: result.stdout
-          when: debug|bool
-      rescue:
-        - ansible.builtin.debug:
-            var: ansible_failed_result
-          when: debug|bool
-        - ansible.builtin.fail:
-            msg: "devel/iocage is required on the node."
-      tags: [sanity, sanity_iocage]
-
-    # facts - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: "Get all iocage_* facts by default"
-      block:
-        - name: "Get all iocage_* facts by default"
-          iocage:
-          register: result
-        - debug:
-            var: result
-          when: debug2|bool
-        - debug:
-            msg: |-
-              iocage_releases = {{ ansible_facts.iocage_releases }}
-              iocage_templates.keys() = {{ ansible_facts.iocage_templates.keys()|list }}
-              iocage_jails.keys() = {{ ansible_facts.iocage_jails.keys()|list }}
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/sanity.yml
+      tags: sanity
+    - ansible.builtin.import_tasks: tasks/facts.yml
       tags: facts
-
-    # fetch - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: "Check if release {{ release }} exists"
-      block:
-        - name: "Check if release {{ release }} exists"
-          iocage:
-            state: fetched
-            release: "{{ release }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/fetch.yml
       tags: fetch
 
-    # base_create - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # base - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    - name: "Check if test_basejai_{{ label }} can be created"
-      block:
-        - name: "Check if test_basejai_{{ label }} can be created"
-          iocage:
-            state: basejail
-            name: "{{ basejail }}"
-            release: "{{ release }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/base_create.yml
       tags: base_create
-
-    # base_exists - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: "Check if test_basejai_{{ label }} exists"
-      block:
-        - name: "Check if test_basejai_{{ label }} exists"
-          iocage:
-            state: exists
-            name: "{{ basejail }}"
-          register: result
-          tags: exist
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/base_exists.yml
       tags: base_exists
-    - assert:
-        that:
-          - "\"doesn't exist\" not in result.msg"
-        fail_msg: "test_basejail_{{ label }} does not exist"
-      tags: base_exists
-
-    # base_set - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Verify that base jail can be converted
-      block:
-        - name: Verify that base jail can be converted
-          iocage:
-            state: set
-            name: "{{ basejail }}"
-            properties:
-              template: 'no'
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/base_set.yml
       tags: base_set
-
-    # base_clone - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Check if basejail can be cloned
-      block:
-        - name: Check if basejail can be cloned
-          iocage:
-            state: cloned
-            name: "{{ jname }}"
-            clone_from: "test_basejail_{{ label }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/base_clone.yml
       tags: base_clone
 
-    # jail_absent - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # jail - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    - name: Check if cloned test jail can be destroyed
-      block:
-        - name: Check if cloned test jail can be destroyed
-          iocage:
-            state: absent
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/jail_absent.yml
       tags: jail_absent
-
-    # jail_restore - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Verify that base jail can be converted back
-      block:
-        - name: Verify that base jail can be converted back
-          iocage:
-            state: set
-            name: "{{ basejail }}"
-            properties:
-              template: true
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/jail_restore.yml
       tags: jail_restore
 
-    # template_create - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # template - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    - name: Check if template jail can be created
-      block:
-        - name: Check if template jail can be created
-          iocage:
-            state: template
-            name: "test_template_{{ label }}"
-            release: "{{ release }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/template_create.yml
       tags: template_create
-
-    # template_start  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Check if template jail can not be started
-      block:
-        - name: Check if template jail can not be started
-          iocage:
-            state: started
-            name: "test_template_{{ label }}"
-            # force: yes
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/template_start.yml
       tags: template_start
-    - assert:
-        that: _msg1 in ansible_failed_result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }}"
-      vars:
-        _msg1: "Jail test_template_{{ label }} could not be started"
-      tags: template_start
-
-    # template_start_force  [TODO] - - - - - - - - - - - - - - - - - - - - - - -
-
-    # - name: Check if template jail can be force-started
-    #   iocage:
-    #     state: started
-    #     name: "test_template_{{ label }}"
-    #     # force: yes
-    #     # TODO should this pass or fail?
-    #   # ignore_errors: yes
-
-    # template_stop - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Check if template jail can be stopped
-      block:
-        - name: Check if template jail can be stopped
-          iocage:
-            state: stopped
-            name: "test_template_{{ label }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/template_start_force.yml
+      tags: template_start_force
+    - ansible.builtin.import_tasks: tasks/template_stop.yml
       tags: template_stop
 
+      # absent - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    # check with an absent jail. should produce lots of ignored errors.
-
-    # It does not, actually. The absent_absent case is idempotent.
-    #
-    # changed: false
-    # failed: false
-    # msg: Jail absent is already absent.
-    # name: ''
-    # stderr: ''
-    # stderr_lines: []
-    # stdout: ''
-    # stdout_lines: []
-    #
-    # absent_absent - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Check if absent jail can be destroyed
-      block:
-        - name: Check if absent jail can be destroyed
-          iocage:
-            state: absent
-            name: absent
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/absent_absent.yml
       tags: absent_absent
-
-    # absent_stop - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Check if absent jail can not be stopped
-      block:
-        - name: Check if absent jail can not be stopped
-          iocage:
-            state: stopped
-            name: absent
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/absent_stop.yml
       tags: absent_stop
-    - assert:
-        that: "\"doesn't exist\" in ansible_failed_result.msg"
-        fail_msg: "Absent jail could not be stopped."
-      tags: absent_stop
-
-    # absent_restart - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Check if absent jail can not be restarted
-      block:
-        - name: Check if absent jail can not be restarted
-          iocage:
-            state: restarted
-            name: absent
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/absent_restart.yml
       tags: absent_restart
-    - assert:
-        that: "\"doesn't exist\" in ansible_failed_result.msg"
-        fail_msg: "Absent jail could not be restarted."
-      tags: absent_restart
-
-    # absent_start - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    - name: Check if absent jail can not be started
-      block:
-        - name: Check if absent jail can not be started
-          iocage:
-            state: started
-            name: absent
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
-      tags: absent_start
-    - assert:
-        that: "\"doesn't exist\" in ansible_failed_result.msg"
-        fail_msg: "Absent jail could not be started."
+    - ansible.builtin.import_tasks: tasks/absent_start.yml
       tags: absent_start
 
-    # check everything - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # test everything - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    - name: Check if test jail can be created
-      block:
-        - name: Check if test jail can be created
-          iocage:
-            state: present
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_present.yml
       tags: [test_present, test_all]
-    - assert:
-        that: _msg1 in result.msg or _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
-      vars:
-        _msg1: "Jail 'test_jail' was created with properties {}."
-        _msg2: "test_jail already exists"
-      tags: [test_present, test_all]
-
-    - name: Check if test jail can be destroyed
-      block:
-        - name: Check if test jail can be destroyed
-          iocage:
-            state: absent
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_absent.yml
       tags: [test_absent, test_all]
-    - assert:
-        that: _msg1 == result.msg or _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
-      vars:
-        _msg1: "Jail 'test_jail' was destroyed., Jail test_jail removed from iocage_jails."
-        _msg2: "Jail test_jail is already absent."
-      tags: [test_absent, test_all]
-
-    - name: Check if test jail can be cloned
-      block:
-        - name: Check if test jail can be cloned
-          iocage:
-            state: cloned
-            clone_from: "test_template_{{ label }}"
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_clone.yml
       tags: [test_clone, test_all]
-    - assert:
-        that: _msg1 in result.msg or _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
-      vars:
-        _msg1: "Jail 'test_jail' was created with properties {}."
-        _msg2: "test_jail already exists"
-      tags: [test_clone, test_all]
-
-    - name: Check if pkg info does not work in not-started test jail
-      block:
-        - name: Check if pkg info does not work in not-started test jail
-          iocage:
-            state: pkg
-            name: "{{ jname }}"
-            cmd: info
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_pkg.yml
       tags: [test_pkg, test_all]
-    - assert:
-        that: _msg1 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }}"
-      vars:
-        _msg1: "Jail 'test_jail' not running"
-      tags: [test_pkg, test_all]
-
-    - name: Check if test jail can be started
-      block:
-        - name: Check if test jail can be started
-          iocage:
-            state: started
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_start.yml
       tags: [test_start, test_all]
-    - assert:
-        that: _msg1 in result.msg or _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
-      vars:
-        _msg1: "Jail test_jail was started."
-        _msg2: "Jail test_jail already started"
-      tags: [test_start, test_all]
-
-    - name: Check if test jail, that is started, is started
-      block:
-        - iocage:
-            state: started
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_start2.yml
       tags: [test_start2, test_all]
-    - assert:
-        that: _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg2 }}"
-      vars:
-        _msg2: "Jail test_jail already started"
-      tags: [test_start2, test_all]
-
-    - name: Check if exec works in test jail
-      block:
-        - name: Check if exec works in test jail
-          iocage:
-            state: exec
-            name: "{{ jname }}"
-            cmd: "/bin/ls -la /root"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_exec.yml
       tags: [test_exec, test_all]
-    - assert:
-        that: _msg1 in result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }}. This message should never be displayed.
-                   Rescue should catch the error in the block. "
-      vars:
-        _msg1: "rc: 0"
-      tags: [test_exec, test_all]
-
-    - name: Check if test jail can be restarted
-      block:
-        - iocage:
-            state: restarted
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_restart.yml
       tags: [test_restart, test_all]
-    - assert:
-        that: _msg1 in result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }}"
-      vars:
-        _msg1: "Jail test_jail was restarted."
-      tags: [test_restart, test_all]
-
-    - name: Check if test jail can be stopped
-      block:
-        - iocage:
-            state: stopped
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_stop.yml
       tags: [test_stop, test_all]
-    - assert:
-        that: _msg1 in result.msg or _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
-      vars:
-        _msg1: "Jail test_jail was stopped."
-        _msg2: "Jail test_jail already stopped"
-      tags: [test_stop, test_all]
-
-    - name: Check if test jail can be started again
-      block:
-        - iocage:
-            state: started
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_start3.yml
       tags: [test_start3, test_all]
-    - assert:
-        that: _msg1 in result.msg or _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
-      vars:
-        _msg1: "Jail test_jail was started."
-        _msg2: "Jail test_jail already started"
-      tags: [test_start3, test_all]
-
-    - name: Check if test jail can be destroyed
-      block:
-        - iocage:
-            state: absent
-            name: "{{ jname }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
+    - ansible.builtin.import_tasks: tasks/test_absent2.yml
       tags: [test_absent2, test_all]
-    - assert:
-        that: _msg1 in result.msg or _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
-      vars:
-        _msg1: "Jail 'test_jail' was destroyed., Jail test_jail removed from iocage_jails."
-        _msg2: "Jail test_jail is already absent."
-      tags: [test_absent2, test_all]
-
-    - name: Check if template jail can be destroyed
-      block:
-        - iocage:
-            state: absent
-            name: "test_template_{{ label }}"
-          register: result
-        - debug:
-            var: result
-          when: debug|bool
-      rescue:
-        - debug:
-            var: ansible_failed_result
-      tags: [test_absent3, test_all]
-    - assert:
-        that: _msg1 in result.msg or _msg2 == result.msg
-        fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
-      vars:
-        _msg1: "Jail 'test_template_{{ label }}' was destroyed., Jail test_template_{{ label }} removed from iocage_templates."
-        _msg2: "Jail test_template_{{ label }} is already absent."
+    - ansible.builtin.import_tasks: tasks/test_absent3.yml
       tags: [test_absent3, test_all]
