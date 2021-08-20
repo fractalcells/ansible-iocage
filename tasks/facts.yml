@@ -1,0 +1,18 @@
+---
+- name: "Get all iocage_* facts by default"
+  block:
+    - name: "Get all iocage_* facts by default"
+      iocage:
+      register: result
+    - debug:
+        var: result
+      when: debug2|bool
+    - debug:
+        msg: |-
+          iocage_releases = {{ ansible_facts.iocage_releases }}
+          iocage_templates.keys() = {{ ansible_facts.iocage_templates.keys()|list }}
+          iocage_jails.keys() = {{ ansible_facts.iocage_jails.keys()|list }}
+      when: debug|bool
+  rescue:
+    - debug:
+        var: ansible_failed_result

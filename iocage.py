@@ -368,13 +368,13 @@ def _props_to_str(props):
         if _val == '-' or _val == '' or not _val:
             continue
         if _val in ['yes', 'on', True]:
-            argstr += f'{_prop}=1 '
+            argstr += f"{_prop}=1 "
         elif _val in ['no', 'off', False]:
-            argstr += f'{_prop}=0 '
+            argstr += f"{_prop}=0 "
         elif _val in ['-', 'none']:
-            argstr += '{_prop}={_val} '
+            argstr += f"{_prop}={_val} "
         else:
-            argstr += '{_prop}={str(_val)} '
+            argstr += f"{_prop}={str(_val)} "
 
     return argstr
 
@@ -604,7 +604,7 @@ def jail_create(module, iocage_path, name=None, properties=None, clone_from_name
             cmd = f"{iocage_path} create -T -n {name} -r {release} {_props_to_str(properties)}"
 
         else:
-            cmd = f"{iocage_path} create -n {name} -r {release} {_props_to_str(properties)}"
+           cmd = f"{iocage_path} create -n {name} -r {release} {_props_to_str(properties)}"
 
         if pkglist:
             cmd += " --pkglist=" + pkglist

@@ -1,0 +1,19 @@
+---
+- name: Check if test jail, that is started, is started
+  block:
+    - iocage:
+        state: started
+        name: "{{ jname }}"
+      register: result
+    - debug:
+        var: result
+      when: debug|bool
+  rescue:
+    - debug:
+        var: ansible_failed_result
+
+- assert:
+    that: _msg2 == result.msg
+    fail_msg: "[ERR] Missing: {{ _msg2 }}"
+  vars:
+    _msg2: "Jail test_jail already started"

@@ -1,0 +1,28 @@
+---
+- block:
+    - ansible.builtin.setup:
+        gather_subset: min
+    - ansible.builtin.debug:
+        var: ansible_python.executable
+      when: debug|bool
+    - ansible.builtin.assert:
+        that:
+          - ansible_python.version.major >= python_required.0|int
+          - ansible_python.version.micro >= python_required.1|int
+        fail_msg: "Pyhton >= {{ python_required }} is required on the node."
+  tags: sanity_python
+
+- block:
+    - ansible.builtin.command:
+        cmd: iocage --version
+      register: result
+    - ansible.builtin.debug:
+        var: result.stdout
+      when: debug|bool
+  rescue:
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.fail:
+        msg: "devel/iocage is required on the node."
+  tags: sanity_iocage
