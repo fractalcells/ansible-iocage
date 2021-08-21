@@ -3,10 +3,10 @@
     _crash: true
 
 - block:
-    - name: "Check if {{ jname }} can be created"
+    - name: "Get all properties of {{ basejail }}"
       iocage:
-        state: present
-        name: "{{ jname }}"
+        state: get
+        name: "{{ basejail }}"
       register: result
     - set_fact:
         _crash: false
@@ -28,6 +28,6 @@
       when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_fail.yml
   vars:
-    _msg1: "Jail '{{ jname }}' was created with properties {}."
-    _msg2: "{{ jname }} already exists"
+    _msg1: "Jail '{{ basejail }}' was created with properties {}."
+    _msg2: "{{ basejail }} already exists"
   when: not _crash

@@ -1,18 +1,30 @@
 ---
-- name: "Check if test_basejai_{{ label }} exists"
-  block:
-    - name: "Check if test_basejai_{{ label }} exists"
+- set_fact:
+    _crash: true
+
+- block:
+    - name: "Check if {{ basejail }} exists"
       iocage:
         state: exists
         name: "{{ basejail }}"
       register: result
+    - set_fact:
+        _crash: false
     - debug:
         var: result
       when: debug|bool
   rescue:
     - debug:
         var: ansible_failed_result
-- assert:
-    that:
-      - "\"doesn't exist\" not in result.msg"
-    fail_msg: "test_basejail_{{ label }} does not exist"
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - assert:
+        that: "\"doesn't exist\" not in result.msg"
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - debug:
+        msg: "[ERR] {{ _test_name }} failed. {{ basejail }} does not exist"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  when: not _crash

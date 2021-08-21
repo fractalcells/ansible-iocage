@@ -1,9 +1,13 @@
 ---
-- name: "Get all iocage_* facts by default"
-  block:
+- set_fact:
+    _crash: true
+
+- block:
     - name: "Get all iocage_* facts by default"
       iocage:
       register: result
+    - set_fact:
+        _crash: false
     - debug:
         var: result
       when: debug2|bool
@@ -16,3 +20,18 @@
   rescue:
     - debug:
         var: ansible_failed_result
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - assert:
+        that:
+          - not result.changed
+          - not result.failed
+          - result.stderr_lines|length == 0
+          - result.stdout_lines|length == 0
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - debug:
+        msg: "[ERR] {{ _test_name }} failed."
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  when: not _crash

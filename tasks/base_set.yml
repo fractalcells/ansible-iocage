@@ -1,16 +1,38 @@
 ---
-- name: Verify that base jail can be converted
-  block:
-    - name: Verify that base jail can be converted
+- set_fact:
+    _crash: true
+
+- block:
+    - name: "Verify that {{ basejail }} can be converted"
       iocage:
         state: set
         name: "{{ basejail }}"
         properties:
-          template: 'no'
+          stop_timeout: 25
       register: result
+    - set_fact:
+        _crash: false
+    - debug:
+        var: iocage_jails[basejail]['properties']['template']
+      when: debug|bool
     - debug:
         var: result
-      when: debug|bool
+      when: debug2|bool
   rescue:
     - debug:
         var: ansible_failed_result
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - assert:
+        that: _msg1 in result.msg or _msg2 == result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }} or {{ _msg2 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail '{{ basejail }}' was created with properties {}."
+    _msg2: "{{ basejail }} already exists"
+  when: not _crash

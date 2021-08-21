@@ -26,3 +26,5 @@
     - ansible.builtin.fail:
         msg: "devel/iocage is required on the node."
   tags: sanity_iocage
+
+- ansible.builtin.import_tasks: custom_stats_pass.yml
