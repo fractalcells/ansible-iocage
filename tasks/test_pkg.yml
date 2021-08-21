@@ -18,4 +18,4 @@
     that: _msg1 == result.msg
     fail_msg: "[ERR] Missing: {{ _msg1 }}"
   vars:
-    _msg1: "Jail 'test_jail' not running"
+    _msg1: "Jail '{{ jname }}' not running"

@@ -16,4 +16,4 @@
     that: _msg1 in result.msg
     fail_msg: "[ERR] Missing: {{ _msg1 }}"
   vars:
-    _msg1: "Jail test_jail was restarted."
+    _msg1: "Jail {{ jname }} was restarted."

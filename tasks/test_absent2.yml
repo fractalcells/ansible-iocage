@@ -16,5 +16,5 @@
     that: _msg1 in result.msg or _msg2 == result.msg
     fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
   vars:
-    _msg1: "Jail 'test_jail' was destroyed., Jail test_jail removed from iocage_jails."
-    _msg2: "Jail test_jail is already absent."
+    _msg1: "Jail '{{ jname }}' was destroyed., Jail {{ jname }} removed from iocage_jails."
+    _msg2: "Jail {{ jname }} is already absent."
