@@ -220,7 +220,9 @@ module_args:
   type: dict
 '''
 
-import pdb
+# import pdb
+# pdb.set_trace()
+
 import json
 import re
 
@@ -519,8 +521,6 @@ def _jail_get_properties(module, iocage_path, name):
 
 def jail_set(module, iocage_path, name, properties=None):
 
-    # pdb.set_trace()
-
     if properties is None:
         properties = {}
 
@@ -584,7 +584,7 @@ def jail_set(module, iocage_path, name, properties=None):
 
     else:
         _changed = False
-        _msg = f"X properties {properties.keys()} already set for jail {name}"
+        _msg = f"properties {properties.keys()} already set for jail {name}"
 
     return _changed, _msg
 
