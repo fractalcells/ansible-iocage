@@ -1,0 +1,15 @@
+---
+- name: Check if template jail can be created
+  block:
+    - name: Check if template jail can be created
+      iocage:
+        state: template
+        name: "test_template_{{ label }}"
+        release: "{{ release }}"
+      register: result
+    - debug:
+        var: result
+      when: debug|bool
+  rescue:
+    - debug:
+        var: ansible_failed_result

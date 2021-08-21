@@ -1,0 +1,14 @@
+---
+# template_start_force  [TODO] - - - - - - - - - - - - - - - - - - - - - - -
+
+# - name: Check if template jail can be force-started
+#   iocage:
+#     state: started
+#     name: "test_template_{{ label }}"
+#     # force: yes
+#     # TODO should this pass or fail?
+#   # ignore_errors: yes
+
+- ansible.builtin.debug:
+    msg: template_start_force not implemented yet.
+  when: debug|bool

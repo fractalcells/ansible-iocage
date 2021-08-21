@@ -1,0 +1,21 @@
+---
+- name: Check if template jail can not be started
+  block:
+    - name: Check if template jail can not be started
+      iocage:
+        state: started
+        name: "test_template_{{ label }}"
+        # force: yes
+      register: result
+    - debug:
+        var: result
+      when: debug|bool
+  rescue:
+    - debug:
+        var: ansible_failed_result
+
+- assert:
+    that: _msg1 in ansible_failed_result.msg
+    fail_msg: "[ERR] Missing: {{ _msg1 }}"
+  vars:
+    _msg1: "Jail test_template_{{ label }} could not be started"

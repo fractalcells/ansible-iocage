@@ -1,0 +1,18 @@
+---
+- name: Check if absent jail can not be stopped
+  block:
+    - name: Check if absent jail can not be stopped
+      iocage:
+        state: stopped
+        name: absent
+      register: result
+    - debug:
+        var: result
+      when: debug|bool
+  rescue:
+    - debug:
+        var: ansible_failed_result
+
+- assert:
+    that: "\"doesn't exist\" in ansible_failed_result.msg"
+    fail_msg: "Absent jail could not be stopped."

@@ -1,0 +1,22 @@
+---
+- name: Check if test jail can be cloned
+  block:
+    - name: Check if test jail can be cloned
+      iocage:
+        state: cloned
+        clone_from: "test_template_{{ label }}"
+        name: "{{ jname }}"
+      register: result
+    - debug:
+        var: result
+      when: debug|bool
+  rescue:
+    - debug:
+        var: ansible_failed_result
+
+- assert:
+    that: _msg1 in result.msg or _msg2 == result.msg
+    fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
+  vars:
+    _msg1: "Jail '{{ jname }}' was created with properties {}."
+    _msg2: "{{ jname }} already exists"

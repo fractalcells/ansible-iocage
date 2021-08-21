@@ -1,90 +1,94 @@
 ---
-- hosts:
-    - localhost
 
+- hosts: localhost
+  gather_facts: false
   become: true
   become_method: sudo
 
+  vars:
+
+    python_required: "36"
+    jname: test_jail
+    release: 13.0-RELEASE
+    label: 13_0_RELEASE
+    basejail: "test_basejail_{{ label }}"
+    debug: false
+    debug2: false
+
   tasks:
-    - name: Check if release 12.0-RELEASE exists
-      iocage: state=fetched release=12.0-RELEASE
 
-    - name: Check if basejail exists
-      iocage: state=exists name=test_basejail_12_0_RELEASE
-      register: result
-      failed_when: "\"doesn't exist\" not in result.msg"
+      # setup - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    #    - name: Check if base jail can be created
-#      iocage: state=basejail name=test_basejail_11_0_RELEASE release=11.0-RELEASE
-#  # Basejails can be made templates
-#    - name: Verify that base jail can be converted
-#      iocage: state=set name=test_basejail_11_0_RELEASE properties={template=no}
-#    - name: Check if clone can be had
-#      iocage: state=cloned name=test_jail clone_from=test_basejail_11_0_RELEASE
-#    - name: Check if cloned test jail can be destroyed
-#      iocage: state=absent name=test_jail
-#    - name: Verify that base jail can be converted back
-#      iocage: state=set name=test_basejail_11_0_RELEASE properties={template=yes}
+    - ansible.builtin.import_tasks: tasks/sanity.yml
+      tags: sanity
+    - ansible.builtin.import_tasks: tasks/facts.yml
+      tags: facts
+    - ansible.builtin.import_tasks: tasks/fetch.yml
+      tags: fetch
 
-  # template glue
-    - name: Check if template jail can be created
-      iocage: state=template name=test_template_12_0_RELEASE release=12.0-RELEASE
-      tags:
-        - debug
-    - name: Check if template jail can't be started
-      iocage: state=started name=test_template_12_0_RELEASE force=yes
-      register: result
-      failed_when: "'Please convert back to a jail' not in result.msg"
-    - name: Check if template jail can be force-started
-      iocage: state=started name=test_template_12_0_RELEASE force=yes
-      # TODO should this pass or fail?
-      ignore_errors: yes
-    - name: Check if template jail can be stopped
-      iocage: state=stopped name=test_template_12_0_RELEASE
+      # base - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  # check with an absent jail. should produce lots of ignored errors.
-    - name: Check if absent jail can be destroyed
-      iocage: state=absent name=absent
-    - name: Check if absent jail can't be stopped
-      iocage: state=stopped name=absent
-      register: result
-      failed_when: "\"doesn't exist\" not in result.msg"
-    - name: Check if absent jail can't be restarted
-      iocage: state=restarted name=absent
-      register: result
-      failed_when: "\"doesn't exist\" not in result.msg"
-    - name: Check if absent jail can't be started
-      iocage: state=started name=absent
-      register: result
-      failed_when: "\"doesn't exist\" not in result.msg"
+    - ansible.builtin.import_tasks: tasks/base_create.yml
+      tags: base_create
+    - ansible.builtin.import_tasks: tasks/base_exists.yml
+      tags: base_exists
+    - ansible.builtin.import_tasks: tasks/base_set.yml
+      tags: base_set
+    - ansible.builtin.import_tasks: tasks/base_clone.yml
+      tags: base_clone
 
-  # check everything
-    - name: Check if test jail can be created
-      iocage: state=present name=test_jail
-    - name: Check if test jail can be destroyed
-      iocage: state=absent name=test_jail
-    - name: Check if test jail can be cloned
-      iocage: state=cloned clone_from=test_template_12_0_RELEASE name=test_jail
-    - name: Check if pkg info does not work in not-started test jail
-      iocage: state=pkg name=test_jail cmd="info"
-      register: result
-      failed_when: "'not running' not in result.msg"
-    - name: Check if test jail can be started
-      iocage: state=started name=test_jail
-    - name: Check if test jail that's started -- is started
-      iocage: state=started name=test_jail
-    - name: Check if exec works in test jail
-      iocage: state=exec name=test_jail cmd="/bin/ls -la /root"
-#    - name: Check if pkg info works in test jail
-#      iocage: state=pkg name=test_jail cmd="info"
-    - name: Check if test jail can be restarted
-      iocage: state=restarted name=test_jail
-    - name: Check if test jail can be stopped
-      iocage: state=stopped name=test_jail
-    - name: Check if test jail can be started again
-      iocage: state=started name=test_jail
-    - name: Check if test jail can be destroyed
-      iocage: state=absent name=test_jail
+      # jail - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    - name: Check if template jail can be destroyed
-      iocage: state=absent name=test_template_12_0_RELEASE
+    - ansible.builtin.import_tasks: tasks/jail_absent.yml
+      tags: jail_absent
+    - ansible.builtin.import_tasks: tasks/jail_restore.yml
+      tags: jail_restore
+
+      # template - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - ansible.builtin.import_tasks: tasks/template_create.yml
+      tags: template_create
+    - ansible.builtin.import_tasks: tasks/template_start.yml
+      tags: template_start
+    - ansible.builtin.import_tasks: tasks/template_start_force.yml
+      tags: template_start_force
+    - ansible.builtin.import_tasks: tasks/template_stop.yml
+      tags: template_stop
+
+      # absent - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - ansible.builtin.import_tasks: tasks/absent_absent.yml
+      tags: absent_absent
+    - ansible.builtin.import_tasks: tasks/absent_stop.yml
+      tags: absent_stop
+    - ansible.builtin.import_tasks: tasks/absent_restart.yml
+      tags: absent_restart
+    - ansible.builtin.import_tasks: tasks/absent_start.yml
+      tags: absent_start
+
+      # test everything - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - ansible.builtin.import_tasks: tasks/test_present.yml
+      tags: [test_present, test_all]
+    - ansible.builtin.import_tasks: tasks/test_absent.yml
+      tags: [test_absent, test_all]
+    - ansible.builtin.import_tasks: tasks/test_clone.yml
+      tags: [test_clone, test_all]
+    - ansible.builtin.import_tasks: tasks/test_pkg.yml
+      tags: [test_pkg, test_all]
+    - ansible.builtin.import_tasks: tasks/test_start.yml
+      tags: [test_start, test_all]
+    - ansible.builtin.import_tasks: tasks/test_start2.yml
+      tags: [test_start2, test_all]
+    - ansible.builtin.import_tasks: tasks/test_exec.yml
+      tags: [test_exec, test_all]
+    - ansible.builtin.import_tasks: tasks/test_restart.yml
+      tags: [test_restart, test_all]
+    - ansible.builtin.import_tasks: tasks/test_stop.yml
+      tags: [test_stop, test_all]
+    - ansible.builtin.import_tasks: tasks/test_start3.yml
+      tags: [test_start3, test_all]
+    - ansible.builtin.import_tasks: tasks/test_absent2.yml
+      tags: [test_absent2, test_all]
+    - ansible.builtin.import_tasks: tasks/test_absent3.yml
+      tags: [test_absent3, test_all]

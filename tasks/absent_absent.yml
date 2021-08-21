@@ -1,0 +1,29 @@
+---
+# check with an absent jail. should produce lots of ignored errors.
+
+# It does not, actually. The absent_absent case is idempotent.
+#
+# changed: false
+# failed: false
+# msg: Jail absent is already absent.
+# name: ''
+# stderr: ''
+# stderr_lines: []
+# stdout: ''
+# stdout_lines: []
+#
+# absent_absent - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- name: Check if absent jail can be destroyed
+  block:
+    - name: Check if absent jail can be destroyed
+      iocage:
+        state: absent
+        name: absent
+      register: result
+    - debug:
+        var: result
+      when: debug|bool
+  rescue:
+    - debug:
+        var: ansible_failed_result
