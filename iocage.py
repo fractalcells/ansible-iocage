@@ -604,7 +604,7 @@ def jail_create(module, iocage_path, name=None, properties=None, clone_from_name
             cmd = f"{iocage_path} create -T -n {name} -r {release} {_props_to_str(properties)}"
 
         else:
-           cmd = f"{iocage_path} create -n {name} -r {release} {_props_to_str(properties)}"
+            cmd = f"{iocage_path} create -n {name} -r {release} {_props_to_str(properties)}"
 
         if pkglist:
             cmd += " --pkglist=" + pkglist
