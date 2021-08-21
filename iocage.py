@@ -553,7 +553,7 @@ def jail_set(module, iocage_path, name, properties=None):
                              .format(_property, str(_val).replace("'", "'\\''"), name))
 
         if 'CHECK_NEW_JAIL' in _existing_props or \
-           (property in _existing_props.keys() and str(_existing_props[_property]) != str(propval)) and \
+           (_property in _existing_props.keys() and str(_existing_props[_property]) != str(propval)) and \
            propval is not None:
             _props_to_be_changed[_property] = propval
 
