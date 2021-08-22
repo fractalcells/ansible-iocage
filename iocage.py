@@ -553,7 +553,7 @@ def jail_set(module, iocage_path, name, properties=None):
                              .format(_property, str(_val).replace("'", "'\\''"), name))
 
         if 'CHECK_NEW_JAIL' in _existing_props or \
-           (property in _existing_props.keys() and str(_existing_props[_property]) != str(propval)) and \
+           (_property in _existing_props.keys() and str(_existing_props[_property]) != str(propval)) and \
            propval is not None:
             _props_to_be_changed[_property] = propval
 
@@ -604,7 +604,7 @@ def jail_create(module, iocage_path, name=None, properties=None, clone_from_name
             cmd = f"{iocage_path} create -T -n {name} -r {release} {_props_to_str(properties)}"
 
         else:
-           cmd = f"{iocage_path} create -n {name} -r {release} {_props_to_str(properties)}"
+            cmd = f"{iocage_path} create -n {name} -r {release} {_props_to_str(properties)}"
 
         if pkglist:
             cmd += " --pkglist=" + pkglist
