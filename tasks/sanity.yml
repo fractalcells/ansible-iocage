@@ -1,6 +1,7 @@
 ---
 - block:
-    - ansible.builtin.setup:
+    - name: "sanity: Test python required {{ python_required }}"
+      ansible.builtin.setup:
         gather_subset: min
     - ansible.builtin.debug:
         var: ansible_python.executable
@@ -9,11 +10,12 @@
         that:
           - ansible_python.version.major >= python_required.0|int
           - ansible_python.version.micro >= python_required.1|int
-        fail_msg: "Pyhton >= {{ python_required }} is required on the node."
+        fail_msg: "[ERR] {{ _test_name }} failes. Pyhton >= {{ python_required }} is required on the node."
   tags: sanity_python
 
 - block:
-    - ansible.builtin.command:
+    - name: "sanity: Test iocage is installed"
+      ansible.builtin.command:
         cmd: iocage --version
       register: result
     - ansible.builtin.debug:
@@ -24,5 +26,7 @@
         var: ansible_failed_result
       when: debug|bool
     - ansible.builtin.fail:
-        msg: "devel/iocage is required on the node."
+        msg: "[ERR] {{ _test_name }} failes. devel/iocage is required on the node."
   tags: sanity_iocage
+
+- ansible.builtin.import_tasks: custom_stats_pass.yml

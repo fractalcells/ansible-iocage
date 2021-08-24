@@ -1,14 +1,41 @@
 ---
-- name: "Check if release {{ release }} exists"
-  block:
-    - name: "Check if release {{ release }} exists"
+# Ansible managed
+
+- ansible.builtin.set_fact:
+    _crash: true
+
+- block:
+    - name: "fetch: Check if release {{ release }} exists"
       iocage:
-        state: fetched
-        release: "{{ release }}"
+        {
+          "release": "{{ release }}",
+          "state": "fetched"
+        }
       register: result
-    - debug:
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
         var: result
-      when: debug|bool
+      when: debug2|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - result.msg is search(release)
+          - not result.changed
+          - not result.failed
+          - result.stderr_lines|length == 0
+          - result.stdout_lines|length == 0
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed."
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  when: not _crash

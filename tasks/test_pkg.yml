@@ -1,21 +1,30 @@
 ---
-- name: Check if pkg info does not work in not-started test jail
-  block:
-    - name: Check if pkg info does not work in not-started test jail
-      iocage:
-        state: pkg
-        name: "{{ jname }}"
-        cmd: info
-      register: result
-    - debug:
-        var: result
-      when: debug|bool
-  rescue:
-    - debug:
-        var: ansible_failed_result
+# Ansible managed
 
-- assert:
-    that: _msg1 == result.msg
-    fail_msg: "[ERR] Missing: {{ _msg1 }}"
+- block:
+    - name: "test_pkg: Check if pkg info does not work in not-started jail {{ jname }}"
+      iocage:
+        {
+          "cmd": "info",
+          "name": "{{ jname }}",
+          "state": "pkg"
+        }
+      register: result
+  rescue:
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 in ansible_failed_result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
   vars:
     _msg1: "Jail '{{ jname }}' not running"
