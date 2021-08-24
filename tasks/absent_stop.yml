@@ -1,18 +1,29 @@
 ---
-- name: Check if absent jail can not be stopped
-  block:
-    - name: Check if absent jail can not be stopped
-      iocage:
-        state: stopped
-        name: absent
-      register: result
-    - debug:
-        var: result
-      when: debug|bool
-  rescue:
-    - debug:
-        var: ansible_failed_result
+# Ansible managed
 
-- assert:
-    that: "\"doesn't exist\" in ansible_failed_result.msg"
-    fail_msg: "Absent jail could not be stopped."
+- block:
+    - name: "absent_stop: Check if absent jail can not be stopped"
+      iocage:
+        {
+          "name": "absent",
+          "state": "stopped"
+        }
+      register: result
+  rescue:
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 == ansible_failed_result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail 'absent' doesn't exist"

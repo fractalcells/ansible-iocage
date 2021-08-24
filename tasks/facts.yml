@@ -1,29 +1,33 @@
 ---
-- set_fact:
+# Ansible managed
+
+- ansible.builtin.set_fact:
     _crash: true
 
 - block:
-    - name: "Get all iocage_* facts by default"
+    - name: "facts: Get all iocage_* facts by default"
       iocage:
       register: result
-    - set_fact:
+    - ansible.builtin.set_fact:
         _crash: false
-    - debug:
+    - ansible.builtin.debug:
         var: result
       when: debug2|bool
-    - debug:
+    - ansible.builtin.debug:
         msg: |-
           iocage_releases = {{ ansible_facts.iocage_releases }}
           iocage_templates.keys() = {{ ansible_facts.iocage_templates.keys()|list }}
           iocage_jails.keys() = {{ ansible_facts.iocage_jails.keys()|list }}
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_crash.yml
 
 - block:
-    - assert:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
         that:
           - not result.changed
           - not result.failed
@@ -31,7 +35,8 @@
           - result.stdout_lines|length == 0
     - ansible.builtin.import_tasks: custom_stats_pass.yml
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         msg: "[ERR] {{ _test_name }} failed."
+      when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_fail.yml
   when: not _crash

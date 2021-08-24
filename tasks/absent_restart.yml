@@ -1,17 +1,29 @@
 ---
-- name: Check if absent jail can not be restarted
-  block:
-    - name: Check if absent jail can not be restarted
+# Ansible managed
+
+- block:
+    - name: "absent_restart: Check if absent jail can not be restarted"
       iocage:
-        state: restarted
-        name: absent
+        {
+          "name": "absent",
+          "state": "restarted"
+        }
       register: result
-    - debug:
-        var: result
-      when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
-- assert:
-    that: "\"doesn't exist\" in ansible_failed_result.msg"
-    fail_msg: "Absent jail could not be restarted."
+      when: debug|bool
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 == ansible_failed_result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail 'absent' doesn't exist"

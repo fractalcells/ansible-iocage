@@ -1,29 +1,39 @@
 ---
-- set_fact:
+# Ansible managed
+
+- ansible.builtin.set_fact:
     _crash: true
 
 - block:
-    - name: "Check if {{ jname }} can be created"
+    - name: "test_present: Check if {{ jname }} can be created"
       iocage:
-        state: present
-        name: "{{ jname }}"
+        {
+          "name": "{{ jname }}",
+          "state": "present"
+        }
       register: result
-    - set_fact:
+    - ansible.builtin.set_fact:
         _crash: false
-    - debug:
+    - ansible.builtin.debug:
         var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_crash.yml
 
 - block:
-    - assert:
-        that: _msg1 in result.msg or _msg2 == result.msg
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 in result.msg or _msg2 == result.msg
     - ansible.builtin.import_tasks: custom_stats_pass.yml
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }} or {{ _msg2 }}"
       when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_fail.yml

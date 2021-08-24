@@ -1,14 +1,42 @@
 ---
-- name: Check if template jail can be stopped
-  block:
-    - name: Check if template jail can be stopped
+# Ansible managed
+
+- ansible.builtin.set_fact:
+    _crash: true
+
+- block:
+    - name: "template_stop: Check if template {{ basejail }} can not be stopped"
       iocage:
-        state: stopped
-        name: "test_template_{{ label }}"
+        {
+          "name": "{{ basejail }}",
+          "state": "stopped"
+        }
       register: result
-    - debug:
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
         var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 in result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail {{ basejail }} already stopped"
+  when: not _crash

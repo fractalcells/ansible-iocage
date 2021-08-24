@@ -220,6 +220,8 @@ module_args:
   type: dict
 '''
 
+# https://docs.python.org/3/library/pdb.html
+# ANSIBLE_KEEP_REMOTE_FILES=true
 # import pdb
 # pdb.set_trace()
 

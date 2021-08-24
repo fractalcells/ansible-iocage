@@ -1,29 +1,29 @@
 ---
-- set_fact:
+- ansible.builtin.set_fact:
     _crash: true
 
 - block:
-    - name: "Get all properties of {{ basejail }}"
+    - name: "misc_get_all: Get all properties of {{ basejail }}"
       iocage:
         state: get
         name: "{{ basejail }}"
       register: result
-    - set_fact:
+    - ansible.builtin.set_fact:
         _crash: false
-    - debug:
+    - ansible.builtin.debug:
         var: result
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
     - ansible.builtin.import_tasks: custom_stats_crash.yml
 
 - block:
-    - assert:
+    - ansible.builtin.assert:
         that: _msg1 in result.msg or _msg2 == result.msg
     - ansible.builtin.import_tasks: custom_stats_pass.yml
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }} or {{ _msg2 }}"
       when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_fail.yml

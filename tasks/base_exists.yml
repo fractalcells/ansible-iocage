@@ -1,30 +1,42 @@
 ---
-- set_fact:
+# Ansible managed
+
+- ansible.builtin.set_fact:
     _crash: true
 
 - block:
-    - name: "Check if {{ basejail }} exists"
+    - name: "base_exists: Check if {{ basejail }} exists"
       iocage:
-        state: exists
-        name: "{{ basejail }}"
+        {
+          "name": "{{ basejail }}",
+          "state": "exists"
+        }
       register: result
-    - set_fact:
+    - ansible.builtin.set_fact:
         _crash: false
-    - debug:
+    - ansible.builtin.debug:
         var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_crash.yml
 
 - block:
-    - assert:
-        that: "\"doesn't exist\" not in result.msg"
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 == result.msg
     - ansible.builtin.import_tasks: custom_stats_pass.yml
   rescue:
-    - debug:
-        msg: "[ERR] {{ _test_name }} failed. {{ basejail }} does not exist"
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Miising: {{ _msg1 }}"
       when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail {{ basejail }} exists"
   when: not _crash
