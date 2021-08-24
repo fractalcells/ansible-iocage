@@ -3,4 +3,5 @@
 .*.sw*
 hosts
 ansible.cfg
+TESTING
 TODO
