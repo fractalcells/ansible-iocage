@@ -1,0 +1,56 @@
+#jinja2: trim_blocks: False
+---
+# {{ ansible_managed }}
+
+- ansible.builtin.set_fact:
+    _crash: true
+
+- block:
+    - name: "{{ task.label }}"
+      iocage:
+{%- if task.iocage is defined %}
+        {{ task.iocage|to_nice_json(indent=2)|indent(width=8) }}
+{%- endif %}
+      register: result
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
+        var: result
+      when: debug2|bool
+{%- for i in task.debug|default([]) %}
+    - ansible.builtin.debug:
+{%- if i.msg is defined %}
+        msg: |-
+          {{ i.msg|indent(width=10) }}
+{%- endif %}
+{%- if i.var is defined %}
+        var: {{ i.var }}
+{%- endif %}
+      when: debug|bool
+{%- endfor %}
+  rescue:
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ lbr }} _test_name {{ rbr }}: All assertions passed"
+        that:
+{%- for i in task.assert %}
+          - {{ i }}
+{%- endfor %}
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "{{ task.msg_err }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+{%- if task.vars|default({})|length > 0 %}
+  vars:
+{%- for k,v in (task.vars|default({})).items() %}
+    {{ k }}: {{ v }}
+{%- endfor %}
+{%- endif %}
+  when: not _crash

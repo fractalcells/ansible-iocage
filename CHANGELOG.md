@@ -1,11 +1,29 @@
 CHANGELOG
 =========
 
+Generate tasks from templates. 2020-08-24
+-----------------------------------------
+
+* Add playbook configure.yml
+* Add FQCN ansible.builtin.*
+* Add vars/iocage_task_db.yml with the dictionary iocage_task_db
+* Add templates command.j2 and command_crash.j2
+* Update .ansible-lint Skip unnamed-task to simplify code for testing
+
+
+iocage_test.yml 2020-08-24
+--------------------------
+
+* hosts accepts var test_iocage. Default localhost
+* Add tasks/custom_stats_* to enable ANSIBLE_SHOW_CUSTOM_STATS
+* Add var _test_name to enhance the stats
+* Update README
+
 
 2020-08-19
 ----------
 
-* Add sanity test to iocage_test.yml	
+* Add sanity test to iocage_test.yml
 * Update README.md
 * Update docs requirements.
 * Delete iocage. Was replaced by iocage.py
@@ -15,7 +33,7 @@ iocage.py (2020-08-16)
 ----------------------
 
 * Use f-strings everywhere.
-* Fix create cmd strings. -r -n values were interchanged.	
+* Fix create cmd strings. -r -n values were interchanged.
 * Facts updated in doc.
 * Add (c) 2021 vbotka@gmail.com to the license.
 * All contibutors added to the authors in doc.

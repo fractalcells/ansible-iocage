@@ -1,29 +1,42 @@
 ---
-# check with an absent jail. should produce lots of ignored errors.
+# Ansible managed
 
-# It does not, actually. The absent_absent case is idempotent.
-#
-# changed: false
-# failed: false
-# msg: Jail absent is already absent.
-# name: ''
-# stderr: ''
-# stderr_lines: []
-# stdout: ''
-# stdout_lines: []
-#
-# absent_absent - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+- ansible.builtin.set_fact:
+    _crash: true
 
-- name: Check if absent jail can be destroyed
-  block:
-    - name: Check if absent jail can be destroyed
+- block:
+    - name: "absent_absent: Check if absent jail can be destroyed"
       iocage:
-        state: absent
-        name: absent
+        {
+          "name": "absent",
+          "state": "absent"
+        }
       register: result
-    - debug:
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
         var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 == result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail absent is already absent."
+  when: not _crash

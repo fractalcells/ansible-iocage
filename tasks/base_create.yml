@@ -1,15 +1,44 @@
 ---
-- name: "Check if test_basejai_{{ label }} can be created"
-  block:
-    - name: "Check if test_basejai_{{ label }} can be created"
+# Ansible managed
+
+- ansible.builtin.set_fact:
+    _crash: true
+
+- block:
+    - name: "base_create: Check if {{ basejail }} can be created"
       iocage:
-        state: basejail
-        name: "{{ basejail }}"
-        release: "{{ release }}"
+        {
+          "name": "{{ basejail }}",
+          "release": "{{ release }}",
+          "state": "basejail"
+        }
       register: result
-    - debug:
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
         var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 in result.msg or _msg2 == result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }} or {{ _msg2 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail '{{ basejail }}' was created with properties {}."
+    _msg2: "{{ basejail }} already exists"
+  when: not _crash

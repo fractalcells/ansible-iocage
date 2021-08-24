@@ -1,20 +1,42 @@
 ---
-- name: Check if template jail can be destroyed
-  block:
-    - iocage:
-        state: absent
-        name: "test_template_{{ label }}"
+# Ansible managed
+
+- ansible.builtin.set_fact:
+    _crash: true
+
+- block:
+    - name: "test_absent3: Check if jail {{ jname }} can be destroyed again"
+      iocage:
+        {
+          "name": "{{ jname }}",
+          "state": "absent"
+        }
       register: result
-    - debug:
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
         var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
 
-- assert:
-    that: _msg1 in result.msg or _msg2 == result.msg
-    fail_msg: "[ERR] Missing: {{ _msg1 }} or {{ _msg2 }}"
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg2 == result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg2 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
   vars:
-    _msg1: "Jail 'test_template_{{ label }}' was destroyed., Jail test_template_{{ label }} removed from iocage_templates."
-    _msg2: "Jail test_template_{{ label }} is already absent."
+    _msg2: "Jail {{ jname }} is already absent."
+  when: not _crash

@@ -1,15 +1,44 @@
 ---
-- name: Check if basejail can be cloned
-  block:
-    - name: Check if basejail can be cloned
+# Ansible managed
+
+- ansible.builtin.set_fact:
+    _crash: true
+
+- block:
+    - name: "base_clone: Check if {{ jname }} can be cloned"
       iocage:
-        state: cloned
-        name: "{{ jname }}"
-        clone_from: "test_basejail_{{ label }}"
+        {
+          "clone_from": "{{ basejail }}",
+          "name": "{{ jname }}",
+          "state": "cloned"
+        }
       register: result
-    - debug:
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
         var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
       when: debug|bool
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - ansible.builtin.assert:
+        success_msg: "{{ _test_name }}: All assertions passed"
+        that:
+          - _msg1 in result.msg or _msg2 == result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }} or {{ _msg2 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "'{{ jname }}' was created with properties {}."
+    _msg2: "{{ jname }} already exists"
+  when: not _crash

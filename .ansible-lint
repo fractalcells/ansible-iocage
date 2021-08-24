@@ -5,4 +5,5 @@ parseable: True
 use_default_rules: True
 rulesdir:
   - $HOME/.ansible/ansible-lint-rules
-skip_list: []
+skip_list:
+  - unnamed-task

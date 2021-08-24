@@ -200,13 +200,41 @@ iocage:
 Tests
 -----
 
+The project comes with set of tests stored in the directory
+tasks. Most of the tasks are generated from templates (see directory
+templates) by the dictionary iocage_task_db stored in
+vars/iocage_task_db.yml. Do not edit such tasks manually. Modify or
+create new template, modify iocage_task_db, and run the playbook
+configure.yml if you want to modify tasks or add new ones.
+
+The complete collection of the tests at localhost
+
 ```
-ansible-playbook -M . iocage_test.yml
+shell> ansible-playbook -M . iocage_test.yml
 ```
 
+should show something similar to
+
 ```sh
-PLAY RECAP **********************************************************************
-localhost: ok=47 changed=13 unreachable=0 failed=0 skipped=26 rescued=5 ignored=0
+PLAY RECAP ***********************************************************************
+localhost: ok=124 changed=12 unreachable=0 failed=0 skipped=53 rescued=5 ignored=0
+```
+
+Custom stats will provide you with more details if you run the tests
+on multiple nodes. See ansible.builtin.set_stats
+
+```sh
+shell> ANSIBLE_SHOW_CUSTOM_STATS=true ansible-playbook iocage_test.yml -M . -e test_iocage=test_23
+```
+
+should show something similar to
+
+```sh
+PLAY RECAP *********************************************************************
+test_23: ok=124 changed=12 unreachable=0 failed=0 skipped=53 rescued=5 ignored=0
+
+CUSTOM STATS: ******************************************************************
+       test_23:   test_pass: 28
 ```
 
 See also
