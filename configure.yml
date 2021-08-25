@@ -9,30 +9,47 @@
 
   vars_files:
 
-    - vars/iocage_task_db.yml
+    - vars/iocage_test_db.yml
+    - vars/iocage_group_db.yml
 
   vars:
 
     lbr: "{{ '{{' }}"
     rbr: "{{ '}}' }}"
-    tests: [facts, fetch,
-            base_create, base_exists, base_set, base_clone,
-            jail_absent, jail_restore,
-            template_create, template_stop, template_start,
-            absent_absent, absent_stop, absent_restart, absent_start,
-            test_present, test_absent, test_clone, test_start, test_start2, test_exec,
-            test_restart, test_stop, test_start3, test_absent2, test_absent3, test_pkg]
+    tests: "{{ iocage_test_db.keys()|list }}"
+    test_groups: "{{ iocage_group_db.keys()|list }}"
 
   tasks:
 
     - name: Create test files in directory tasks
       ansible.builtin.template:
-        src: '{{ iocage_task_db[item].template }}.j2'
+        src: '{{ iocage_test_db[item].template }}.j2'
         dest: '{{ playbook_dir }}/tasks/{{ item }}.yml'
         mode: '0664'
         backup: true
         validate: ansible-lint %s
       loop: '{{ tests }}'
       vars:
-        task: '{{ iocage_task_db[item] }}'
+        test: '{{ iocage_test_db[item] }}'
       tags: create_tasks
+
+    - name: Create group files in directory tasks
+      ansible.builtin.template:
+        src: '{{ iocage_group_db[item].template }}.j2'
+        dest: '{{ playbook_dir }}/tasks/{{ item }}.yml'
+        mode: '0664'
+        backup: true
+        validate: ansible-lint %s
+      loop: '{{ test_groups }}'
+      vars:
+        group: '{{ iocage_group_db[item] }}'
+      tags: create_groups
+
+    - name: Create playbook iocage_test.yml
+      ansible.builtin.template:
+        src: iocage_test.yml.j2
+        dest: iocage_test.yml
+        mode: '0664'
+        backup: true
+        validate: ansible-lint %s
+      tags: create_iocage_test

@@ -200,20 +200,14 @@ iocage:
 Tests
 -----
 
-The project comes with set of tests stored in the directory
-tasks. Most of the tasks are generated from templates (see directory
-templates) by the dictionary iocage_task_db stored in
-vars/iocage_task_db.yml. Do not edit such tasks manually. Modify or
-create new template, modify iocage_task_db, and run the playbook
-configure.yml if you want to modify tasks or add new ones.
-
-The complete collection of the tests at localhost
+The project comes with set of tests stored in the directory tasks. Run
+the complete collection of the tests at localhost
 
 ```
 shell> ansible-playbook -M . iocage_test.yml
 ```
 
-should show something similar to
+This should display a report similar to this one
 
 ```sh
 PLAY RECAP ***********************************************************************
@@ -221,21 +215,107 @@ localhost: ok=124 changed=12 unreachable=0 failed=0 skipped=53 rescued=5 ignored
 ```
 
 Custom stats will provide you with more details if you run the tests
-on multiple nodes. See ansible.builtin.set_stats
+on multiple nodes. See *ansible.builtin.set_stats*. For example run
+the complete collection of the tests on two nodes *test_23* and
+*test_29*
 
 ```sh
-shell> ANSIBLE_SHOW_CUSTOM_STATS=true ansible-playbook iocage_test.yml -M . -e test_iocage=test_23
+shell> ANSIBLE_SHOW_CUSTOM_STATS=true \
+       ansible-playbook iocage_test.yml -M . \
+       -e test_iocage=test_23,test_29
 ```
 
-should show something similar to
+This should display a report similar to this one
 
 ```sh
 PLAY RECAP *********************************************************************
 test_23: ok=124 changed=12 unreachable=0 failed=0 skipped=53 rescued=5 ignored=0
+test_29: ok=124 changed=12 unreachable=0 failed=0 skipped=53 rescued=5 ignored=0
 
 CUSTOM STATS: ******************************************************************
        test_23:   test_pass: 28
+       test_29:   test_pass: 28
 ```
+
+
+Advanced tests
+--------------
+
+Most of the tests and groups are generated from templates (see
+directory templates) by the dictionaries iocage_task_db and
+iocage_group_db stored in the files in directory vars. Do not edit the
+tasks and groups manually. Modify or create new template, modify
+dictionaries, and run the playbook configure.yml if you want to modify
+the tasks and groups or add new ones. For example, add new group of
+tests in vars/iocage_group_db.yml
+
+```yaml
+---
+iocage_group_db:
+  ...
+  group_present_absent_restart:
+    template: group
+    tests: [test_present, test_absent, test_restart]
+```
+
+Run playbook *configure.yml and create the group *group_present_absent_restart*
+
+```sh
+shell> ansible-playbook configure.yml
+...
+ok: [localhost] => (item=group_present_absent_restart)
+```
+
+Create file with the parameters of the tests, e.g. enable debug and
+run the tests on the nodes *test_23,test_29*.
+
+```yaml
+shell> cat examples/test_31-debug.yml
+---
+test_iocage: test_23,test_29
+my_jname: test_31
+my_debug: true
+```
+
+Run the tests and display custom stats
+
+```sh
+shell> ANSIBLE_SHOW_CUSTOM_STATS=true \
+       ansible-playbook iocage_test.yml -M . \
+       -e @examples/test_31-debug-n2.yml \
+       -t group_present_absent_restart
+```
+
+This should display a report similar to this abridged one
+
+```yaml
+
+PLAY [test_23,test_29] *********************************************************
+
+ok: [test_23] =>
+  result.msg: |-
+    Jail 'test_31' was created with properties {}.
+    /usr/local/bin/iocage create -n test_31 -r 13.0-RELEASE
+ok: [test_29] =>
+  result.msg: |-
+    Jail 'test_31' was created with properties {}.
+    /usr/local/bin/iocage create -n test_31 -r 13.0-RELEASE
+
+ok: [test_23] =>
+  result.msg: Jail 'test_31' was destroyed., Jail test_31 removed from iocage_jails.
+ok: [test_29] =>
+  result.msg: Jail 'test_31' was destroyed., Jail test_31 removed from iocage_jails.
+
+fatal: [test_23]: FAILED! => changed=false
+  msg: Jail 'test_31' doesn't exist
+fatal: [test_29]: FAILED! => changed=false
+  msg: Jail 'test_31' doesn't exist
+
+CUSTOM STATS: ******************************************************************
+	test_23:   test_crash: test_restart,  test_pass: 2
+	test_29:   test_crash: test_restart,  test_pass: 2
+```
+
 
 See also
 --------

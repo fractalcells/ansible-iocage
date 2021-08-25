@@ -3,10 +3,10 @@
 # {{ ansible_managed }}
 
 - block:
-    - name: "{{ task.label }}"
+    - name: "{{ test.label }}"
       iocage:
-{%- if task.iocage is defined %}
-        {{ task.iocage|to_nice_json(indent=2)|indent(width=8) }}
+{%- if test.iocage is defined %}
+        {{ test.iocage|to_nice_json(indent=2)|indent(width=8) }}
 {%- endif %}
       register: result
   rescue:
@@ -18,18 +18,18 @@
     - ansible.builtin.assert:
         success_msg: "{{ lbr }} _test_name {{ rbr }}: All assertions passed"
         that:
-{%- for i in task.assert %}
+{%- for i in test.assert %}
           - {{ i }}
 {%- endfor %}
     - ansible.builtin.import_tasks: custom_stats_pass.yml
   rescue:
     - ansible.builtin.debug:
-        msg: "{{ task.msg_err }}"
+        msg: "{{ test.msg_err }}"
       when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_fail.yml
-{%- if task.vars|default({})|length > 0 %}
+{%- if test.vars|default({})|length > 0 %}
   vars:
-{%- for k,v in (task.vars|default({})).items() %}
+{%- for k,v in (test.vars|default({})).items() %}
     {{ k }}: {{ v }}
 {%- endfor %}
 {%- endif %}

@@ -1,0 +1,26 @@
+#jinja2: trim_blocks: False
+---
+# {{ ansible_managed }}
+
+- hosts: "{{ lbr }} test_iocage|default('localhost') {{ rbr }}"
+  gather_facts: false
+  become: true
+  become_method: sudo
+
+  vars:
+
+    python_required: "{{ lbr }} my_python_required|default('36') {{ rbr }}"
+    jname: "{{ lbr }} my_jname|default('test_jail') {{ rbr }}"
+    release: "{{ lbr }} my_release|default('13.0-RELEASE') {{ rbr }}"
+    label_default: "{{ lbr }} release|regex_replace('[\\W]', '_') {{ rbr }}"
+    label: "{{ lbr }} my_label|default(label_default) {{ rbr }}"
+    basejail_default: "test_basejail_{{ lbr }} label {{ rbr }}"
+    basejail: "{{ lbr }} my_basejail|default(basejail_default) {{ rbr }}"
+    debug: "{{ lbr }} my_debug|default(false) {{ rbr }}"
+    debug2: "{{ lbr }} my_debug2|default(false) {{ rbr }}"
+
+  tasks:
+{% for i in test_groups %}
+    - ansible.builtin.import_tasks: tasks/{{ i }}.yml
+      tags: {{ i }}
+{% endfor %}

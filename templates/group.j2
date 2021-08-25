@@ -1,0 +1,8 @@
+#jinja2: trim_blocks: False
+---
+# {{ ansible_managed }}
+{% for i in group.tests %}
+- ansible.builtin.import_tasks: tasks/{{ i }}.yml
+  vars:
+    _test_name: {{ i }}
+{% endfor %}

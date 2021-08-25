@@ -1,0 +1,9 @@
+#jinja2: trim_blocks: False
+---
+# {{ ansible_managed }}
+{% for i in iocage_group_db|dict2items|map(attribute='value.tests')|flatten|unique|sort %}
+- ansible.builtin.import_tasks: tasks/{{ i }}.yml
+  vars:
+    _test_name: {{ i }}
+  tags: {{ i }}
+{% endfor %}

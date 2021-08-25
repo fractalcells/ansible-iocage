@@ -1,0 +1,142 @@
+---
+# Ansible managed
+
+- ansible.builtin.import_tasks: tasks/absent_absent.yml
+  vars:
+    _test_name: absent_absent
+  tags: absent_absent
+
+- ansible.builtin.import_tasks: tasks/absent_restart.yml
+  vars:
+    _test_name: absent_restart
+  tags: absent_restart
+
+- ansible.builtin.import_tasks: tasks/absent_start.yml
+  vars:
+    _test_name: absent_start
+  tags: absent_start
+
+- ansible.builtin.import_tasks: tasks/absent_stop.yml
+  vars:
+    _test_name: absent_stop
+  tags: absent_stop
+
+- ansible.builtin.import_tasks: tasks/base_clone.yml
+  vars:
+    _test_name: base_clone
+  tags: base_clone
+
+- ansible.builtin.import_tasks: tasks/base_create.yml
+  vars:
+    _test_name: base_create
+  tags: base_create
+
+- ansible.builtin.import_tasks: tasks/base_exists.yml
+  vars:
+    _test_name: base_exists
+  tags: base_exists
+
+- ansible.builtin.import_tasks: tasks/base_set.yml
+  vars:
+    _test_name: base_set
+  tags: base_set
+
+- ansible.builtin.import_tasks: tasks/facts.yml
+  vars:
+    _test_name: facts
+  tags: facts
+
+- ansible.builtin.import_tasks: tasks/fetch.yml
+  vars:
+    _test_name: fetch
+  tags: fetch
+
+- ansible.builtin.import_tasks: tasks/jail_absent.yml
+  vars:
+    _test_name: jail_absent
+  tags: jail_absent
+
+- ansible.builtin.import_tasks: tasks/jail_restore.yml
+  vars:
+    _test_name: jail_restore
+  tags: jail_restore
+
+- ansible.builtin.import_tasks: tasks/sanity.yml
+  vars:
+    _test_name: sanity
+  tags: sanity
+
+- ansible.builtin.import_tasks: tasks/template_create.yml
+  vars:
+    _test_name: template_create
+  tags: template_create
+
+- ansible.builtin.import_tasks: tasks/template_start.yml
+  vars:
+    _test_name: template_start
+  tags: template_start
+
+- ansible.builtin.import_tasks: tasks/template_stop.yml
+  vars:
+    _test_name: template_stop
+  tags: template_stop
+
+- ansible.builtin.import_tasks: tasks/test_absent.yml
+  vars:
+    _test_name: test_absent
+  tags: test_absent
+
+- ansible.builtin.import_tasks: tasks/test_absent2.yml
+  vars:
+    _test_name: test_absent2
+  tags: test_absent2
+
+- ansible.builtin.import_tasks: tasks/test_absent3.yml
+  vars:
+    _test_name: test_absent3
+  tags: test_absent3
+
+- ansible.builtin.import_tasks: tasks/test_clone.yml
+  vars:
+    _test_name: test_clone
+  tags: test_clone
+
+- ansible.builtin.import_tasks: tasks/test_exec.yml
+  vars:
+    _test_name: test_exec
+  tags: test_exec
+
+- ansible.builtin.import_tasks: tasks/test_pkg.yml
+  vars:
+    _test_name: test_pkg
+  tags: test_pkg
+
+- ansible.builtin.import_tasks: tasks/test_present.yml
+  vars:
+    _test_name: test_present
+  tags: test_present
+
+- ansible.builtin.import_tasks: tasks/test_restart.yml
+  vars:
+    _test_name: test_restart
+  tags: test_restart
+
+- ansible.builtin.import_tasks: tasks/test_start.yml
+  vars:
+    _test_name: test_start
+  tags: test_start
+
+- ansible.builtin.import_tasks: tasks/test_start2.yml
+  vars:
+    _test_name: test_start2
+  tags: test_start2
+
+- ansible.builtin.import_tasks: tasks/test_start3.yml
+  vars:
+    _test_name: test_start3
+  tags: test_start3
+
+- ansible.builtin.import_tasks: tasks/test_stop.yml
+  vars:
+    _test_name: test_stop
+  tags: test_stop

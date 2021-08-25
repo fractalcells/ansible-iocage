@@ -1,0 +1,14 @@
+---
+# Ansible managed
+
+- ansible.builtin.import_tasks: tasks/template_create.yml
+  vars:
+    _test_name: template_create
+
+- ansible.builtin.import_tasks: tasks/template_stop.yml
+  vars:
+    _test_name: template_stop
+
+- ansible.builtin.import_tasks: tasks/template_start.yml
+  vars:
+    _test_name: template_start

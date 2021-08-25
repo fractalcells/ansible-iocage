@@ -1,0 +1,18 @@
+---
+# Ansible managed
+
+- ansible.builtin.import_tasks: tasks/base_create.yml
+  vars:
+    _test_name: base_create
+
+- ansible.builtin.import_tasks: tasks/base_exists.yml
+  vars:
+    _test_name: base_exists
+
+- ansible.builtin.import_tasks: tasks/base_set.yml
+  vars:
+    _test_name: base_set
+
+- ansible.builtin.import_tasks: tasks/base_clone.yml
+  vars:
+    _test_name: base_clone

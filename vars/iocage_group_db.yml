@@ -1,0 +1,27 @@
+---
+iocage_group_db:
+  group_setup:
+    template: group
+    tests: [sanity, facts, fetch]
+  group_base:
+    template: group
+    tests: [base_create, base_exists, base_set, base_clone]
+  group_jail:
+    template: group
+    tests: [jail_absent, jail_restore]
+  group_template:
+    template: group
+    tests: [template_create, template_stop, template_start]
+  group_absent:
+    template: group
+    tests: [absent_absent, absent_stop, absent_restart, absent_start]
+  group_test:
+    template: group
+    tests: [test_present, test_absent, test_clone, test_start, test_start2, test_exec,
+            test_restart, test_stop, test_start3, test_absent2, test_absent3, test_pkg]
+  group_all:
+    template: group_all
+    tests: []
+  group_present_absent_restart:
+    template: group
+    tests: [test_present, test_absent, test_restart]

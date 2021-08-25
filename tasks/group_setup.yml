@@ -1,0 +1,14 @@
+---
+# Ansible managed
+
+- ansible.builtin.import_tasks: tasks/sanity.yml
+  vars:
+    _test_name: sanity
+
+- ansible.builtin.import_tasks: tasks/facts.yml
+  vars:
+    _test_name: facts
+
+- ansible.builtin.import_tasks: tasks/fetch.yml
+  vars:
+    _test_name: fetch

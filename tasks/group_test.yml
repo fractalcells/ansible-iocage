@@ -1,0 +1,50 @@
+---
+# Ansible managed
+
+- ansible.builtin.import_tasks: tasks/test_present.yml
+  vars:
+    _test_name: test_present
+
+- ansible.builtin.import_tasks: tasks/test_absent.yml
+  vars:
+    _test_name: test_absent
+
+- ansible.builtin.import_tasks: tasks/test_clone.yml
+  vars:
+    _test_name: test_clone
+
+- ansible.builtin.import_tasks: tasks/test_start.yml
+  vars:
+    _test_name: test_start
+
+- ansible.builtin.import_tasks: tasks/test_start2.yml
+  vars:
+    _test_name: test_start2
+
+- ansible.builtin.import_tasks: tasks/test_exec.yml
+  vars:
+    _test_name: test_exec
+
+- ansible.builtin.import_tasks: tasks/test_restart.yml
+  vars:
+    _test_name: test_restart
+
+- ansible.builtin.import_tasks: tasks/test_stop.yml
+  vars:
+    _test_name: test_stop
+
+- ansible.builtin.import_tasks: tasks/test_start3.yml
+  vars:
+    _test_name: test_start3
+
+- ansible.builtin.import_tasks: tasks/test_absent2.yml
+  vars:
+    _test_name: test_absent2
+
+- ansible.builtin.import_tasks: tasks/test_absent3.yml
+  vars:
+    _test_name: test_absent3
+
+- ansible.builtin.import_tasks: tasks/test_pkg.yml
+  vars:
+    _test_name: test_pkg
