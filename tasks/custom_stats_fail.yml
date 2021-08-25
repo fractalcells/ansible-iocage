@@ -3,4 +3,4 @@
     aggregate: true
     per_host: true
     data:
-      test_fail: "{{ _test_name }},"
+      fail: "{{ _test_name }},"

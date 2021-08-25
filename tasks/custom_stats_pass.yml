@@ -3,4 +3,4 @@
     aggregate: true
     per_host: true
     data:
-      test_pass: 1
+      ok: 1
