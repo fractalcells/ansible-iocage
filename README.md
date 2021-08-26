@@ -270,6 +270,7 @@ shell> cat examples/test_31-debug-n2.yml
 test_iocage: test_23,test_29
 my_jname: test_31
 my_debug: true
+my_strategy: free
 ```
 
 Run the tests and display custom stats
@@ -282,9 +283,9 @@ This should display a report similar to this abridged one
 
 ```yaml
 
-PLAY [test_23,test_29] *************************************************************
+PLAY [test_23,test_29] *****************************************************************
 
-TASK [test_present: Check if test_31 can be created] *******************************
+TASK [test_present: Check if test_31 can be created] ***********************************
 ok: [test_23] =>
   result.msg: |-
     Jail 'test_31' was created with properties {}.
@@ -294,21 +295,21 @@ ok: [test_29] =>
     Jail 'test_31' was created with properties {}.
     /usr/local/bin/iocage create -n test_31 -r 13.0-RELEASE
 
-TASK [test_absent: Check if jail test_31 can be destroyed] *************************
+TASK [test_absent: Check if jail test_31 can be destroyed] *****************************
 ok: [test_23] =>
   result.msg: Jail 'test_31' was destroyed., Jail test_31 removed from iocage_jails.
 ok: [test_29] =>
   result.msg: Jail 'test_31' was destroyed., Jail test_31 removed from iocage_jails.
 
-TASK [test_restart: Check if jail test_31 can be restarted] ************************
+TASK [test_restart: Check if jail test_31 can be restarted] ****************************
 fatal: [test_23]: FAILED! => changed=false
   msg: Jail 'test_31' doesn't exist
 fatal: [test_29]: FAILED! => changed=false
   msg: Jail 'test_31' doesn't exist
 
-CUSTOM STATS: **********************************************************************
-        test_23:   crash: test_restart,  ok: 2
-        test_29:   crash: test_restart,  ok: 2
+CUSTOM STATS: **************************************************************************
+        test_23:   a1: Aug 25 23:26:31  a2: Aug 25 23:27:01  crash: test_restart,  ok: 2
+        test_29:   a1: Aug 25 23:26:31  a2: Aug 25 23:28:06  crash: test_restart,  ok: 2
 ```
 
 

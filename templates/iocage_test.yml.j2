@@ -3,6 +3,7 @@
 # {{ ansible_managed }}
 
 - hosts: "{{ lbr }} test_iocage|default('localhost') {{ rbr }}"
+  strategy: "{{ lbr }} my_strategy|default('linear') {{ rbr }}"
   gather_facts: false
   become: true
   become_method: sudo
@@ -20,7 +21,12 @@
     debug2: "{{ lbr }} my_debug2|default(false) {{ rbr }}"
 
   tasks:
+
+    - ansible.builtin.import_tasks: tasks/custom_stats_start.yml
+      tags: always
 {% for i in test_groups %}
     - ansible.builtin.import_tasks: tasks/{{ i }}.yml
       tags: {{ i }}
 {% endfor %}
+    - ansible.builtin.import_tasks: tasks/custom_stats_end.yml
+      tags: always

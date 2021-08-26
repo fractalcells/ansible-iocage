@@ -2,6 +2,7 @@
 # Ansible managed
 
 - hosts: "{{ test_iocage|default('localhost') }}"
+  strategy: "{{ my_strategy|default('linear') }}"
   gather_facts: false
   become: true
   become_method: sudo
@@ -19,6 +20,9 @@
     debug2: "{{ my_debug2|default(false) }}"
 
   tasks:
+
+    - ansible.builtin.import_tasks: tasks/custom_stats_start.yml
+      tags: always
 
     - ansible.builtin.import_tasks: tasks/group_setup.yml
       tags: group_setup
@@ -43,3 +47,6 @@
 
     - ansible.builtin.import_tasks: tasks/group_present_absent_restart.yml
       tags: group_present_absent_restart
+
+    - ansible.builtin.import_tasks: tasks/custom_stats_end.yml
+      tags: always
