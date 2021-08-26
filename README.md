@@ -237,7 +237,7 @@ Advanced tests
 --------------
 
 Most of the tests and groups are generated from templates (see
-directory templates) by the dictionaries *iocage_task_db* and
+directory templates) by the dictionaries *iocage_test_db* and
 *iocage_group_db* stored in the files in directory vars. Do not edit the
 tasks and groups manually. Modify or create new template, modify
 dictionaries, and run the playbook *configure.yml* if you want to modify
@@ -262,7 +262,8 @@ ok: [localhost] => (item=group_present_absent_restart)
 ```
 
 Create file with the parameters of the tests, e.g. run the tests on
-the nodes *test_23,test_29*, use jail *test_31*, and enable debug
+the nodes *test_23,test_29*, use jail *test_31*, enable debug, and set
+strategy *free*
 
 ```yaml
 shell> cat examples/test_31-debug-n2.yml
