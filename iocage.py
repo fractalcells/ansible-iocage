@@ -762,11 +762,11 @@ def run_module():
 
     # need existing jail
     if p["state"] in ["started", "stopped", "restarted", "set", "exec", "pkg", "exists"]:
-        if name not in facts["iocage_jails"] and name not in facts["iocage_templates"]:
+        if name not in jails:
             module.fail_json(msg=f"Jail '{name}' doesn't exist")
 
     # states that need running jail
-    if p["state"] in ["exec", "pkg"] and facts["iocage_jails"][name]["state"] != "up":
+    if p["state"] in ["exec", "pkg"] and jails[name]["state"] != "up":
         module.fail_json(msg=f"Jail '{name}' not running")
 
     if p["state"] == "started":
@@ -794,7 +794,7 @@ def run_module():
         changed, _msg = jail_restart(module, iocage_path, name)
         jails[name] = _get_iocage_facts(module, iocage_path, "jails", name)
         if jails[name]["state"] != "up":
-            module.fail_json(msg=f"Starting jail {name} failed with {_msg}")
+            module.fail_json(msg=f"Restarting jail {name} failed with {_msg}")
         msgs.append(_msg)
 
     elif p["state"] == "exec":
