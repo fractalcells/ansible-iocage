@@ -1,0 +1,9 @@
+---
+verbosity: 1
+quiet: False
+parseable: True
+use_default_rules: True
+rulesdir:
+  - $HOME/.ansible/ansible-lint-rules
+skip_list:
+  - unnamed-task

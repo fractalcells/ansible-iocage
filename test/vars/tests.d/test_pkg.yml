@@ -1,0 +1,15 @@
+---
+test_pkg:
+  template: command
+  label: 'test_pkg: Check if pkg info works in started jail {{ lbr }} jname {{ rbr }}'
+  iocage:
+    state: pkg
+    name: '{{ lbr }} jname {{ rbr }}'
+    cmd: 'info'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg1 in result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }}'
+  vars:
+    _msg1: "\"was executed in jail '{{ lbr }} jname {{ rbr }}'\""

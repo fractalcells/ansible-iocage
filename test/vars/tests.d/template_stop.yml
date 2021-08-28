@@ -1,0 +1,14 @@
+---
+template_stop:
+  template: command
+  label: 'template_stop: Check if template {{ lbr }} basejail {{ rbr }} can not be stopped'
+  iocage:
+    state: stopped
+    name: '{{ lbr }} basejail {{ rbr }}'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg1 in result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }}'
+  vars:
+    _msg1: "\"Jail {{ lbr }} basejail {{ rbr }} already stopped\""

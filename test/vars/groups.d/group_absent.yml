@@ -1,0 +1,8 @@
+---
+group_absent:
+  template: group
+  tests:
+    - test: absent_absent
+    - test: absent_stop_crash
+    - test: absent_restart_crash
+    - test: absent_start_crash

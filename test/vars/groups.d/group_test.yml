@@ -1,0 +1,18 @@
+---
+group_test:
+  template: group
+  tests:
+    - test: test_present
+    - test: test_absent
+    - test: test_clone
+    - test: test_start
+    - test: test_start2
+    - test: test_exec
+      vars:
+        cmd: /bin/ls -la /root
+    - test: test_restart
+    - test: test_stop
+    - test: test_pkg_crash
+    - test: test_start3
+    - test: test_absent
+    - test: test_absent2

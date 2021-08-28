@@ -1,0 +1,12 @@
+#jinja2: trim_blocks: False
+---
+# {{ ansible_managed }}
+
+{%- for i in group.tests %}
+- ansible.builtin.import_tasks: tasks/{{ i.test }}.yml
+  vars:
+    _test_name: {{ i.test }}
+{%- if i.vars is defined %}
+    {{ i.vars|to_nice_yaml(indent=2)|indent(width=4) }}
+{%- endif %}
+{%- endfor %}

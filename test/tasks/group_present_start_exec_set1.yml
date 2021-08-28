@@ -1,0 +1,18 @@
+---
+# Ansible managed
+- ansible.builtin.import_tasks: tasks/test_present.yml
+  vars:
+    _test_name: test_present
+- ansible.builtin.import_tasks: tasks/test_start.yml
+  vars:
+    _test_name: test_start
+- ansible.builtin.import_tasks: tasks/test_exec.yml
+  vars:
+    _test_name: test_exec
+    cmd: /bin/ls -la /root
+
+- ansible.builtin.import_tasks: tasks/test_set.yml
+  vars:
+    _test_name: test_set
+    properties:
+      ip4_addr: em0|10.1.0.99/24

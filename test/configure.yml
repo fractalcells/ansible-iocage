@@ -1,0 +1,70 @@
+---
+
+- name: Configure iocage
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  # become: true
+  # become_method: sudo
+
+  vars:
+
+    lbr: "{{ '{{' }}"
+    rbr: "{{ '}}' }}"
+
+  tasks:
+
+    - name: Create vars
+      block:
+        - name: Create iocage_test_db and my_tests
+          ansible.builtin.include_vars:
+            dir: vars/tests.d
+            name: iocage_test_db
+            extensions: ['yaml', 'yml']
+            ignore_unknown_extensions: true
+        - ansible.builtin.set_fact:
+            my_tests: "{{ iocage_test_db.keys()|list }}"
+          when: my_tests is undefined
+        - name: Create iocage_group_db and my_groups
+          ansible.builtin.include_vars:
+            dir: vars/groups.d
+            name: iocage_group_db
+            extensions: ['yaml', 'yml']
+            ignore_unknown_extensions: true
+        - ansible.builtin.set_fact:
+            my_groups: "{{ iocage_group_db.keys()|list }}"
+          when: my_groups is undefined
+      tags: [always, create_vars]
+
+    - name: Create test files in directory tasks
+      ansible.builtin.template:
+        src: '{{ test.template }}.j2'
+        dest: '{{ playbook_dir }}/tasks/{{ item }}.yml'
+        mode: '0664'
+        backup: true
+        validate: ansible-lint %s
+      loop: '{{ [my_tests]|flatten }}'
+      vars:
+        test: '{{ iocage_test_db[item] }}'
+      tags: create_tests
+
+    - name: Create group files in directory tasks
+      ansible.builtin.template:
+        src: '{{ group.template }}.j2'
+        dest: '{{ playbook_dir }}/tasks/{{ item }}.yml'
+        mode: '0664'
+        backup: true
+        validate: ansible-lint %s
+      loop: '{{ [my_groups]|flatten }}'
+      vars:
+        group: '{{ iocage_group_db[item] }}'
+      tags: create_groups
+
+    - name: Create playbook iocage_test.yml
+      ansible.builtin.template:
+        src: iocage_test.yml.j2
+        dest: iocage_test.yml
+        mode: '0664'
+        backup: true
+        validate: ansible-lint %s
+      tags: create_iocage_test

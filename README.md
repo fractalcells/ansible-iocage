@@ -14,9 +14,7 @@ Description
 This module is an Ansible 'wrapper' of the iocage command.
 
 * Works with new Python3 iocage, not anymore with shell version
-
 * Release is host's one if not specified
-
 * Release is automatically fetched if missing
 
 
@@ -24,7 +22,6 @@ Requirements (on the node)
 --------------------------
 
 * lang/python >= 3.6
-
 * sysutils/iocage
 
 
@@ -200,18 +197,148 @@ iocage:
 Tests
 -----
 
+The project comes with set of tests stored in the directory test/tasks. Run
+the complete collection of the tests at localhost
+
 ```
-ansible-playbook -M . iocage_test.yml
+shell> cd test
+shell> ansible-playbook -M . iocage_test.yml
 ```
 
+This should display a report similar to this one
+
 ```sh
-PLAY RECAP **********************************************************************
-localhost: ok=47 changed=13 unreachable=0 failed=0 skipped=26 rescued=5 ignored=0
+PLAY RECAP ***********************************************************************
+localhost: ok=158 changed=17 unreachable=0 failed=0 skipped=65 rescued=6 ignored=0
 ```
+
+Custom stats will provide you with more details if you run the tests
+on multiple nodes. See *ansible.builtin.set_stats*. For example run
+the complete collection of the tests on two nodes *test_23* and
+*test_29*
+
+```sh
+shell> ANSIBLE_SHOW_CUSTOM_STATS=true ansible-playbook iocage_test.yml -M . -e my_hosts=test_23,test_29
+```
+
+This should display a report similar to this one
+
+```sh
+PLAY RECAP *********************************************************************
+test_23: ok=158 changed=17 unreachable=0 failed=0 skipped=65 rescued=6 ignored=0
+test_29: ok=158 changed=17 unreachable=0 failed=0 skipped=65 rescued=6 ignored=0
+
+CUSTOM STATS: ******************************************************************
+       test_23:   ok: 35
+       test_29:   ok: 35
+```
+
+
+Advanced tests
+--------------
+
+Most of the tests and groups are generated from templates (see
+directory templates) by the dictionaries *iocage_test_db* and
+*iocage_group_db* stored in the files in directory vars. Do not edit
+the tasks and groups manually. Modify or create new templates and
+dictionaries, and run the playbook *configure.yml*. For example, add
+new group of tests in *vars/groups.d/group_present_absent_restart.yml*
+
+```yaml
+---
+group_present_absent_restart:
+  template: group
+  tests:
+    - test: test_present
+    - test: test_absent
+    - test: test_restart_crash
+```
+
+Run playbook *configure.yml* and create the group *group_present_absent_restart*
+
+```sh
+shell> ansible-playbook configure.yml -e my_groups=group_present_absent_restart -t create_groups,create_iocage_test
+...
+TASK [Create group files in directory tasks] *********************************
+ok: [localhost] => (item=group_present_absent_restart)
+
+TASK [Create playbook iocage_test.yml] ***************************************
+ok: [localhost]
+```
+
+Create file with the parameters of the tests, e.g. run the tests on
+the nodes *test_23,test_29*, use jail *test_31*, enable debug, and set
+strategy *free*
+
+```yaml
+shell> cat extra_vars/test_31-debug-n2.yml
+---
+my_hosts: test_23,test_29
+my_jname: test_31
+my_debug: true
+my_strategy: free
+```
+
+Run the tests and display custom stats
+
+```sh
+shell> ANSIBLE_SHOW_CUSTOM_STATS=true ansible-playbook iocage_test.yml -M . -e @extra_vars/test_31-debug-n2.yml -t group_present_absent_restart
+```
+
+This should display a report similar to this abridged one
+
+```yaml
+
+PLAY [test_23,test_29] *****************************************************************
+
+TASK [>>> TEST START: test_present: Check if test_31 can be created] *******************
+ok: [test_23] =>
+  result.msg: |-
+    Jail 'test_31' was created with properties {}.
+    /usr/local/bin/iocage create -n test_31 -r 13.0-RELEASE
+ok: [test_29] =>
+  result.msg: |-
+    Jail 'test_31' was created with properties {}.
+    /usr/local/bin/iocage create -n test_31 -r 13.0-RELEASE
+
+ok: [test_23] => changed=false
+  msg: |-
+    [OK]  test_present: Passed: Jail 'test_31' was created with properties {}.
+ok: [test_29] => changed=false
+  msg: |-
+    [OK]  test_present: Passed: Jail 'test_31' was created with properties {}.
+
+TASK [>>> TEST START: test_absent: Check if jail test_31 can be destroyed] *************
+ok: [test_23] =>
+  result.msg: Jail 'test_31' was destroyed., Jail test_31 removed from iocage_jails.
+ok: [test_29] =>
+  result.msg: Jail 'test_31' was destroyed., Jail test_31 removed from iocage_jails.
+
+ok: [test_23] => changed=false
+  msg: '[OK]  test_absent: Passed: Jail ''test_31'' was destroyed., Jail test_31 removed from iocage_jails.'
+ok: [test_29] => changed=false
+  msg: '[OK]  test_absent: Passed: Jail ''test_31'' was destroyed., Jail test_31 removed from iocage_jails.'
+
+TASK [>>> TEST START: test_restart_crash: Check if jail test_31 can not be restarted] **
+fatal: [test_23]: FAILED! => changed=false
+  msg: Jail 'test_31' doesn't exist
+fatal: [test_29]: FAILED! => changed=false
+  msg: Jail 'test_31' doesn't exist
+
+ok: [test_23] => changed=false
+  msg: '[OK]  test_restart_crash: Passed: Jail ''test_31'' doesn''t exist'
+ok: [test_29] => changed=false
+  msg: '[OK]  test_restart_crash: Passed: Jail ''test_31'' doesn''t exist'
+
+
+CUSTOM STATS: **************************************************************************
+        test_23:   a1: Aug 25 23:26:31  a2: Aug 25 23:27:01  ok: 3
+        test_29:   a1: Aug 25 23:26:31  a2: Aug 25 23:28:06  ok: 3
+```
+
 
 See also
 --------
 
 * [iocage - A FreeBSD Jail Manager - iocage documentation at readthedocs.io](https://iocage.readthedocs.io/en/latest/)
-
 * [iocage - Jail manager using ZFS and VNET - FreeBSD System Manager's Manual](https://www.freebsd.org/cgi/man.cgi?query=iocage)

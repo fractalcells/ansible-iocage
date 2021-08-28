@@ -1,0 +1,9 @@
+#jinja2: trim_blocks: False
+---
+# {{ ansible_managed }}
+{% for i in iocage_test_db.keys()|sort %}
+- ansible.builtin.import_tasks: tasks/{{ i }}.yml
+  vars:
+    _test_name: {{ i }}
+  tags: [never, {{ i }}]
+{% endfor %}

@@ -1,0 +1,6 @@
+---
+my_hosts: test_23
+my_jname: test_jail
+properties:
+  ip4_addr: "em0|10.1.0.99/24"
+my_debug: true

@@ -1,0 +1,5 @@
+---
+my_hosts: test_23
+my_jname: test_jail
+cmd: /bin/ls -la /root
+my_debug: true

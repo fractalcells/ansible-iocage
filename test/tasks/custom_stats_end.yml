@@ -1,0 +1,5 @@
+---
+- ansible.builtin.set_stats:
+    per_host: true
+    data:
+      a2: "{{ '%b %d %H:%M:%S'|strftime }}"

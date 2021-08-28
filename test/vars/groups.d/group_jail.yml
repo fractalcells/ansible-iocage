@@ -1,0 +1,6 @@
+---
+group_jail:
+  template: group
+  tests:
+    - test: jail_absent
+    - test: jail_restore

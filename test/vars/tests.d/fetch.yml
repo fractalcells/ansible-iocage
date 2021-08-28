@@ -1,0 +1,14 @@
+---
+fetch:
+  template: command
+  label: 'fetch: Check if release {{ lbr }} release {{ rbr }} exists'
+  iocage:
+    state: fetched
+    release: "{{ lbr }} release {{ rbr }}"
+  assert:
+    - 'result.msg is search(release)'
+    - 'not result.changed'
+    - 'not result.failed'
+    - 'result.stderr_lines|length == 0'
+    - 'result.stdout_lines|length == 0'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed.'

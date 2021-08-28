@@ -1,0 +1,30 @@
+---
+# Ansible managed
+
+- block:
+    - name: " >>> TEST START: template_start_crash: Check if template {{ basejail }} can not be started"
+      iocage:
+        {
+          "name": "{{ basejail }}",
+          "state": "started"
+        }
+      register: result
+  rescue:
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+
+- block:
+    - ansible.builtin.assert:
+        fail_msg: "[ERR] {{ _test_name }}: Failed: {{ ansible_failed_result.msg }}"
+        success_msg: "[OK]  {{ _test_name }}: Passed: {{ ansible_failed_result.msg }}"
+        that:
+          - _msg1 in ansible_failed_result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail {{ basejail }} could not be started"

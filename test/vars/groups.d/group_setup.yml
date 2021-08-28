@@ -1,0 +1,7 @@
+---
+group_setup:
+  template: group
+  tests:
+    - test: sanity
+    - test: facts
+    - test: fetch

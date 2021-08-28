@@ -1,0 +1,31 @@
+---
+# Ansible managed
+
+- block:
+    - name: " >>> TEST START: test_restart_crash: Check if not-existent jail {{ jname }} can not be restarted"
+      iocage:
+        {
+          "name": "{{ jname }}",
+          "state": "restarted"
+        }
+      register: result
+  rescue:
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+
+- block:
+    - ansible.builtin.assert:
+        fail_msg: "[ERR] {{ _test_name }}: Failed: {{ ansible_failed_result.msg }}"
+        success_msg: "[OK]  {{ _test_name }}: Passed: {{ ansible_failed_result.msg }}"
+        that:
+          - _msg1 == ansible_failed_result.msg or _msg2 == ansible_failed_result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }} or {{ _msg1 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "Jail '{{ jname }}' not running"
+    _msg2: "Jail '{{ jname }}' doesn't exist"

@@ -1,0 +1,13 @@
+---
+test_restart_crash:
+  template: command_crash
+  label: 'test_restart_crash: Check if not-existent jail {{ lbr }} jname {{ rbr }} can not be restarted'
+  iocage:
+    state: restarted
+    name: '{{ lbr }} jname {{ rbr }}'
+  assert:
+    - '_msg1 == ansible_failed_result.msg or _msg2 == ansible_failed_result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }} or {{ lbr }} _msg1 {{ rbr }}'
+  vars:
+    _msg1: "\"Jail '{{ lbr }} jname {{ rbr }}' not running\""
+    _msg2: "\"Jail '{{ lbr }} jname {{ rbr }}' doesn't exist\""

@@ -1,0 +1,7 @@
+---
+group_present_absent_restart:
+  template: group
+  tests:
+    - test: test_present
+    - test: test_absent
+    - test: test_restart_crash

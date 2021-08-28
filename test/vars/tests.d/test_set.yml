@@ -1,0 +1,18 @@
+---
+test_set:
+  template: command
+  label: 'test_set: Set properties at {{ lbr }} jname {{ rbr }}'
+  iocage:
+    state: set
+    name: '{{ lbr }} jname {{ rbr }}'
+    properties: '{{ lbr }} properties {{ rbr }}'
+  debug:
+    - var: result.msg
+  debug2:
+    - var: iocage_templates[basejail].properties
+  assert:
+    - '_msg1 in result.msg or _msg2 in result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }} or {{ lbr }} _msg2 {{ rbr }}'
+  vars:
+    _msg1: "\"were set on jail '{{ lbr }} jname {{ rbr }}'\""
+    _msg2: "\"already set for jail {{ lbr }} jname {{ rbr }}\""

@@ -1,0 +1,14 @@
+---
+test_restart:
+  template: command
+  label: 'test_restart: Check if jail {{ lbr }} jname {{ rbr }} can be restarted'
+  iocage:
+    state: restarted
+    name: '{{ lbr }} jname {{ rbr }}'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg1 in result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }}'
+  vars:
+    _msg1: "\"Jail {{ lbr }} jname {{ rbr }} was restarted.\""

@@ -1,0 +1,12 @@
+---
+absent_start_crash:
+  template: command_crash
+  label: 'absent_start_crash: Check if absent jail can not be started'
+  iocage:
+    state: started
+    name: absent
+  assert:
+    - '_msg1 == ansible_failed_result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }}'
+  vars:
+    _msg1: "\"Jail 'absent' doesn't exist\""

@@ -1,0 +1,43 @@
+---
+# Ansible managed
+
+- ansible.builtin.set_fact:
+    _crash: true
+
+- block:
+    - name: " >>> TEST START: test_start2: Check if jail {{ jname }} can be started again"
+      iocage:
+        {
+          "name": "{{ jname }}",
+          "state": "started"
+        }
+      register: result
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
+        var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
+      when: debug|bool
+  rescue:
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - ansible.builtin.assert:
+        fail_msg: "[ERR] {{ _test_name }}: Failed: {{ result.msg }}"
+        success_msg: "[OK]  {{ _test_name }}: Passed: {{ result.msg }}"
+        that:
+          - _msg2 == result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg2 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg2: "Jail {{ jname }} already started"
+  when: not _crash

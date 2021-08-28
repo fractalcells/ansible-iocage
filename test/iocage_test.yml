@@ -1,0 +1,56 @@
+---
+# Ansible managed
+
+- hosts: "{{ my_hosts|default('localhost') }}"
+  strategy: "{{ my_strategy|default('linear') }}"
+  gather_facts: false
+  become: true
+  become_method: sudo
+
+  vars:
+
+    python_required: "{{ my_python_required|default('36') }}"
+    jname: "{{ my_jname|default('test_jail') }}"
+    release: "{{ my_release|default('13.0-RELEASE') }}"
+    label_default: "{{ release|regex_replace('[\\W]', '_') }}"
+    label: "{{ my_label|default(label_default) }}"
+    basejail_default: "test_basejail_{{ label }}"
+    basejail: "{{ my_basejail|default(basejail_default) }}"
+    properties: "{{ my_properties|default({}) }}"
+    debug: "{{ my_debug|default(false) }}"
+    debug2: "{{ my_debug2|default(false) }}"
+
+  tasks:
+
+    - ansible.builtin.import_tasks: tasks/custom_stats_start.yml
+      tags: always
+
+    - ansible.builtin.import_tasks: tasks/group_absent.yml
+      tags: group_absent
+
+    - ansible.builtin.import_tasks: tasks/group_all.yml
+      tags: group_all
+
+    - ansible.builtin.import_tasks: tasks/group_base.yml
+      tags: group_base
+
+    - ansible.builtin.import_tasks: tasks/group_jail.yml
+      tags: group_jail
+
+    - ansible.builtin.import_tasks: tasks/group_present_absent_restart.yml
+      tags: group_present_absent_restart
+
+    - ansible.builtin.import_tasks: tasks/group_present_start_exec_set1.yml
+      tags: group_present_start_exec_set1
+
+    - ansible.builtin.import_tasks: tasks/group_setup.yml
+      tags: group_setup
+
+    - ansible.builtin.import_tasks: tasks/group_template.yml
+      tags: group_template
+
+    - ansible.builtin.import_tasks: tasks/group_test.yml
+      tags: group_test
+
+    - ansible.builtin.import_tasks: tasks/custom_stats_end.yml
+      tags: always

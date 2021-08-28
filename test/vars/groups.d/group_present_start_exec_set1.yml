@@ -1,0 +1,13 @@
+---
+group_present_start_exec_set1:
+  template: group
+  tests:
+    - test: test_present
+    - test: test_start
+    - test: test_exec
+      vars:
+        cmd: /bin/ls -la /root
+    - test: test_set
+      vars:
+        properties:
+          ip4_addr: 'em0|10.1.0.99/24'
