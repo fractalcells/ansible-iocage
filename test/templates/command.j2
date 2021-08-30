@@ -2,6 +2,12 @@
 ---
 # {{ ansible_managed }}
 
+# Expect iocage to pass with expected message(s).
+# Status:
+# pass ..... module pass with expected message(s)
+# fail ..... module pass without expected message(s)
+# crash .... module crash
+
 - ansible.builtin.set_fact:
     _crash: true
 

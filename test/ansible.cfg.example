@@ -1,0 +1,25 @@
+[defaults]
+inventory = $PWD/hosts
+roles_path = $PWD/roles
+collections_path = $PWD/collections
+retry_files_enabled = false
+stdout_callback = yaml
+log_path = /var/log/ansible.log
+
+[ssh_connection]
+pipelining = true
+
+[colors]
+changed = purple
+debug = bright yellow
+deprecate = blue
+diff_add = green
+diff_lines = cyan
+diff_remove = red
+error = red
+highlight = white
+ok = green
+skip = yellow
+unreachable = bright red
+verbose = blue
+warn = bright purple

@@ -1,0 +1,8 @@
+---
+group_start_restart_stop_crash:
+  template: group
+  tests:
+    - test: test_absent
+    - test: test_start_crash
+    - test: test_restart_crash
+    - test: test_stop_crash

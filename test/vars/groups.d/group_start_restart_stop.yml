@@ -1,0 +1,12 @@
+---
+group_start_restart_stop:
+  template: group
+  tests:
+    - test: test_clone
+    - test: test_start
+    - test: test_start
+    - test: test_restart
+    - test: test_stop
+    - test: test_stop
+    - test: test_restart
+    - test: test_absent

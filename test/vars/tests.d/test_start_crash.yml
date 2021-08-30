@@ -1,9 +1,9 @@
 ---
-test_restart_crash:
+test_start_crash:
   template: command_crash
-  label: 'test_restart_crash: Check if not-existent jail {{ lbr }} jname {{ rbr }} can not be restarted'
+  label: 'test_start_crash: Check if not-existent jail {{ lbr }} jname {{ rbr }} can not be started'
   iocage:
-    state: restarted
+    state: started
     name: '{{ lbr }} jname {{ rbr }}'
   assert:
     - '_msg1 == ansible_failed_result.msg'

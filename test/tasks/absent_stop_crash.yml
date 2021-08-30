@@ -1,6 +1,15 @@
 ---
 # Ansible managed
 
+# Expect iocage to crash with expected message(s).
+# Status:
+# pass ..... module crash with expected message(s)
+# fail ..... module crash without expected message(s)
+# crash .... module does not crash
+
+- ansible.builtin.set_fact:
+    _crash: false
+
 - block:
     - name: " >>> TEST START: absent_stop_crash: Check if absent jail can not be stopped"
       iocage:
@@ -9,7 +18,13 @@
           "state": "stopped"
         }
       register: result
+    - ansible.builtin.debug:
+        var: result
+      when: debug2|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
   rescue:
+    - ansible.builtin.set_fact:
+        _crash: true
     - ansible.builtin.debug:
         var: ansible_failed_result
       when: debug|bool
@@ -28,3 +43,4 @@
     - ansible.builtin.import_tasks: custom_stats_fail.yml
   vars:
     _msg1: "Jail 'absent' doesn't exist"
+  when: _crash

@@ -11,11 +11,11 @@
     _crash: false
 
 - block:
-    - name: " >>> TEST START: absent_start_crash: Check if absent jail can not be started"
+    - name: " >>> TEST START: test_stop_crash: Check if not-existent jail {{ jname }} can not be stopped"
       iocage:
         {
-          "name": "absent",
-          "state": "started"
+          "name": "{{ jname }}",
+          "state": "stopped"
         }
       register: result
     - ansible.builtin.debug:
@@ -42,5 +42,5 @@
       when: debug|bool
     - ansible.builtin.import_tasks: custom_stats_fail.yml
   vars:
-    _msg1: "Jail 'absent' doesn't exist"
+    _msg1: "Jail '{{ jname }}' doesn't exist"
   when: _crash

@@ -225,12 +225,12 @@ This should display a report similar to this one
 
 ```sh
 PLAY RECAP *********************************************************************
-test_23: ok=158 changed=17 unreachable=0 failed=0 skipped=65 rescued=6 ignored=0
-test_29: ok=158 changed=17 unreachable=0 failed=0 skipped=65 rescued=6 ignored=0
+test_23: ok=207 changed=17 unreachable=0 failed=0 skipped=28 rescued=6 ignored=0
+test_29: ok=207 changed=17 unreachable=0 failed=0 skipped=28 rescued=6 ignored=0
 
 CUSTOM STATS: ******************************************************************
-       test_23:   ok: 35
-       test_29:   ok: 35
+       test_23:   a1: Aug 29 21:46:23  a2: Aug 29 21:52:12  ok: 35
+       test_29:   a1: Aug 29 21:46:23  a2: Aug 29 22:03:57  ok: 35
 ```
 
 
@@ -335,6 +335,28 @@ CUSTOM STATS: ******************************************************************
         test_23:   a1: Aug 25 23:26:31  a2: Aug 25 23:27:01  ok: 3
         test_29:   a1: Aug 25 23:26:31  a2: Aug 25 23:28:06  ok: 3
 ```
+
+
+Variables and parameters of the tests
+-------------------------------------
+
+In this framework, there are three sources of the tests' parameters
+
+* Hard-coded parameters in the test files and group files. If you want
+  to customize them change the data in vars/ and run the playbook
+  *configure.yml*. You can also add you own test and group files
+  preferably in the form of the data in vars/ and templates. Add
+  templates if needed.
+
+* Defaults in the playbook iocage_test.yml. If you want to customize
+  them change the template *iocage_test.yml.j2* and run the playbook
+  *configure.yml*.
+
+* Extra vars on the command line. See examples in the directory
+  extra_vars/ on how to create files with extra variables.
+
+Except of this you can customize the variables at any other precedence
+you want to, of course.
 
 
 See also
