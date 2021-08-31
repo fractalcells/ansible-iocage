@@ -1,0 +1,15 @@
+---
+test_present:
+  template: command
+  label: 'test_present: Check if {{ lbr }} jname {{ rbr }} can be created'
+  iocage:
+    state: present
+    name: '{{ lbr }} jname {{ rbr }}'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg1 in result.msg or _msg2 == result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }} or {{ lbr }} _msg2 {{ rbr }}'
+  vars:
+    _msg1: "\"Jail '{{ lbr }} jname {{ rbr }}' was created with properties {}.\""
+    _msg2: "\"{{ lbr }} jname {{ rbr }} already exists\""

@@ -1,0 +1,14 @@
+---
+test_start2:
+  template: command
+  label: 'test_start2: Check if jail {{ lbr }} jname {{ rbr }} can be started again'
+  iocage:
+    state: started
+    name: '{{ lbr }} jname {{ rbr }}'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg2 == result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg2 {{ rbr }}'
+  vars:
+    _msg2: "\"Jail {{ lbr }} jname {{ rbr }} already started\""

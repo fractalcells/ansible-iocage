@@ -1,0 +1,8 @@
+---
+group_base:
+  template: group
+  tests:
+    - test: base_create
+    - test: base_exists
+    - test: base_set_template_no
+    - test: base_clone

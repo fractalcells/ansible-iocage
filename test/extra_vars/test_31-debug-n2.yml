@@ -1,0 +1,5 @@
+---
+my_hosts: test_23,test_29
+my_jname: test_31
+my_debug: true
+my_strategy: free

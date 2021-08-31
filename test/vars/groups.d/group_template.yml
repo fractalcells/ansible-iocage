@@ -1,0 +1,7 @@
+---
+group_template:
+  template: group
+  tests:
+    - test: template_create
+    - test: template_stop
+    - test: template_start_crash

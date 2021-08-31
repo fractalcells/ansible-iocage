@@ -1,0 +1,8 @@
+---
+# Ansible managed
+- ansible.builtin.import_tasks: tasks/jail_absent.yml
+  vars:
+    _test_name: jail_absent
+- ansible.builtin.import_tasks: tasks/jail_restore.yml
+  vars:
+    _test_name: jail_restore

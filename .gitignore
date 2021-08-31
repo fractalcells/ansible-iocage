@@ -1,6 +1,8 @@
 .*~
 *~
 .*.sw*
+collections
 hosts
 ansible.cfg
+TESTING
 TODO

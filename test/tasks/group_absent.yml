@@ -1,0 +1,14 @@
+---
+# Ansible managed
+- ansible.builtin.import_tasks: tasks/absent_absent.yml
+  vars:
+    _test_name: absent_absent
+- ansible.builtin.import_tasks: tasks/absent_stop_crash.yml
+  vars:
+    _test_name: absent_stop_crash
+- ansible.builtin.import_tasks: tasks/absent_restart_crash.yml
+  vars:
+    _test_name: absent_restart_crash
+- ansible.builtin.import_tasks: tasks/absent_start_crash.yml
+  vars:
+    _test_name: absent_start_crash

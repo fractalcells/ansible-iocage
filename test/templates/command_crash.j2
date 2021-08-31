@@ -1,0 +1,63 @@
+#jinja2: trim_blocks: False
+---
+# {{ ansible_managed }}
+
+# Expect iocage to crash with expected message(s).
+# Status:
+# pass ..... module crash with expected message(s)
+# fail ..... module crash without expected message(s)
+# crash .... module does not crash
+
+- ansible.builtin.set_fact:
+    _crash: false
+
+- block:
+    - name: " >>> TEST START: {{ test.label }}"
+      iocage:
+{%- if test.iocage is defined %}
+        {{ test.iocage|to_nice_json(indent=2)|indent(width=8) }}
+{%- endif %}
+      register: result
+    - ansible.builtin.debug:
+        var: result
+      when: debug2|bool
+{%- for i in test.debug|default([]) %}
+    - ansible.builtin.debug:
+{%- if i.msg is defined %}
+        msg: |-
+          {{ i.msg|indent(width=10) }}
+{%- endif %}
+{%- if i.var is defined %}
+        var: {{ i.var }}
+{%- endif %}
+      when: debug|bool
+{%- endfor %}
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+  rescue:
+    - ansible.builtin.set_fact:
+        _crash: true
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+
+- block:
+    - ansible.builtin.assert:
+        fail_msg: "[ERR] {{ lbr }} _test_name {{ rbr }}: Failed: {{ lbr }} ansible_failed_result.msg {{ rbr }}"
+        success_msg: "[OK]  {{ lbr }} _test_name {{ rbr }}: Passed: {{ lbr }} ansible_failed_result.msg {{ rbr }}"
+        that:
+{%- for i in test.assert %}
+          - {{ i }}
+{%- endfor %}
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "{{ test.msg_err }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+{%- if test.vars|default({})|length > 0 %}
+  vars:
+{%- for k,v in (test.vars|default({})).items() %}
+    {{ k }}: {{ v }}
+{%- endfor %}
+{%- endif %}
+  when: _crash

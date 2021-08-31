@@ -1,0 +1,15 @@
+---
+facts:
+  template: command
+  label: 'facts: Get all iocage_* facts by default'
+  debug:
+    - msg: |-
+        iocage_releases = {{ lbr }} ansible_facts.iocage_releases {{ rbr }}
+        iocage_templates.keys() = {{ lbr }} ansible_facts.iocage_templates.keys()|list {{ rbr }}
+        iocage_jails.keys() = {{ lbr }} ansible_facts.iocage_jails.keys()|list {{ rbr }}
+  assert:
+    - 'not result.changed'
+    - 'not result.failed'
+    - 'result.stderr_lines|length == 0'
+    - 'result.stdout_lines|length == 0'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed.'

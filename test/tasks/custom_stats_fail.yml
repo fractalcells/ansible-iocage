@@ -1,0 +1,6 @@
+---
+- ansible.builtin.set_stats:
+    aggregate: true
+    per_host: true
+    data:
+      fail: "{{ _test_name }},"

@@ -1,0 +1,16 @@
+---
+template_create:
+  template: command
+  label: 'template_create: Check if template {{ lbr }} basejail {{ rbr }} can be created'
+  iocage:
+    state: template
+    name: '{{ lbr }} basejail {{ rbr }}'
+    release: '{{ lbr }} release {{ rbr }}'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg1 in result.msg or _msg2 in result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }} or {{ lbr }} _msg2 {{ rbr }}'
+  vars:
+    _msg1: "\"{{ lbr }} basejail {{ rbr }} was created\""
+    _msg2: "\"{{ lbr }} basejail {{ rbr }} already exists\""

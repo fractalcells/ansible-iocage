@@ -1,0 +1,14 @@
+---
+base_exists:
+  template: command
+  label: 'base_exists: Check if {{ lbr }} basejail {{ rbr }} exists'
+  iocage:
+    state: exists
+    name: '{{ lbr }} basejail {{ rbr }}'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg1 == result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Miising: {{ lbr }} _msg1 {{ rbr }}'
+  vars:
+    _msg1: "\"Jail {{ lbr }} basejail {{ rbr }} exists\""

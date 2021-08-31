@@ -1,0 +1,14 @@
+---
+test_pkg_crash:
+  template: command_crash
+  label: 'test_pkg_crash: Check if pkg info does not work in not-started jail {{ lbr }} jname {{ rbr }}'
+  iocage:
+    state: pkg
+    name: '{{ lbr }} jname {{ rbr }}'
+    cmd: 'info'
+  assert:
+    - '_msg1 == ansible_failed_result.msg or _msg2 == ansible_failed_result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }} or {{ lbr }} _msg2 {{ rbr }}'
+  vars:
+    _msg1: "\"Jail '{{ lbr }} jname {{ rbr }}' doesn't exist\""
+    _msg2: "\"Jail '{{ lbr }} jname {{ rbr }}' not running\""

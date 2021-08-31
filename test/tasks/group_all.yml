@@ -1,0 +1,162 @@
+---
+# Ansible managed
+
+- ansible.builtin.import_tasks: tasks/absent_absent.yml
+  vars:
+    _test_name: absent_absent
+  tags: [never, absent_absent]
+
+- ansible.builtin.import_tasks: tasks/absent_restart_crash.yml
+  vars:
+    _test_name: absent_restart_crash
+  tags: [never, absent_restart_crash]
+
+- ansible.builtin.import_tasks: tasks/absent_start_crash.yml
+  vars:
+    _test_name: absent_start_crash
+  tags: [never, absent_start_crash]
+
+- ansible.builtin.import_tasks: tasks/absent_stop_crash.yml
+  vars:
+    _test_name: absent_stop_crash
+  tags: [never, absent_stop_crash]
+
+- ansible.builtin.import_tasks: tasks/base_clone.yml
+  vars:
+    _test_name: base_clone
+  tags: [never, base_clone]
+
+- ansible.builtin.import_tasks: tasks/base_create.yml
+  vars:
+    _test_name: base_create
+  tags: [never, base_create]
+
+- ansible.builtin.import_tasks: tasks/base_exists.yml
+  vars:
+    _test_name: base_exists
+  tags: [never, base_exists]
+
+- ansible.builtin.import_tasks: tasks/base_set.yml
+  vars:
+    _test_name: base_set
+  tags: [never, base_set]
+
+- ansible.builtin.import_tasks: tasks/base_set_template_no.yml
+  vars:
+    _test_name: base_set_template_no
+  tags: [never, base_set_template_no]
+
+- ansible.builtin.import_tasks: tasks/facts.yml
+  vars:
+    _test_name: facts
+  tags: [never, facts]
+
+- ansible.builtin.import_tasks: tasks/fetch.yml
+  vars:
+    _test_name: fetch
+  tags: [never, fetch]
+
+- ansible.builtin.import_tasks: tasks/jail_absent.yml
+  vars:
+    _test_name: jail_absent
+  tags: [never, jail_absent]
+
+- ansible.builtin.import_tasks: tasks/jail_restore.yml
+  vars:
+    _test_name: jail_restore
+  tags: [never, jail_restore]
+
+- ansible.builtin.import_tasks: tasks/template_create.yml
+  vars:
+    _test_name: template_create
+  tags: [never, template_create]
+
+- ansible.builtin.import_tasks: tasks/template_start_crash.yml
+  vars:
+    _test_name: template_start_crash
+  tags: [never, template_start_crash]
+
+- ansible.builtin.import_tasks: tasks/template_stop.yml
+  vars:
+    _test_name: template_stop
+  tags: [never, template_stop]
+
+- ansible.builtin.import_tasks: tasks/test_absent.yml
+  vars:
+    _test_name: test_absent
+  tags: [never, test_absent]
+
+- ansible.builtin.import_tasks: tasks/test_absent2.yml
+  vars:
+    _test_name: test_absent2
+  tags: [never, test_absent2]
+
+- ansible.builtin.import_tasks: tasks/test_clone.yml
+  vars:
+    _test_name: test_clone
+  tags: [never, test_clone]
+
+- ansible.builtin.import_tasks: tasks/test_exec.yml
+  vars:
+    _test_name: test_exec
+  tags: [never, test_exec]
+
+- ansible.builtin.import_tasks: tasks/test_pkg.yml
+  vars:
+    _test_name: test_pkg
+  tags: [never, test_pkg]
+
+- ansible.builtin.import_tasks: tasks/test_pkg_crash.yml
+  vars:
+    _test_name: test_pkg_crash
+  tags: [never, test_pkg_crash]
+
+- ansible.builtin.import_tasks: tasks/test_present.yml
+  vars:
+    _test_name: test_present
+  tags: [never, test_present]
+
+- ansible.builtin.import_tasks: tasks/test_restart.yml
+  vars:
+    _test_name: test_restart
+  tags: [never, test_restart]
+
+- ansible.builtin.import_tasks: tasks/test_restart_crash.yml
+  vars:
+    _test_name: test_restart_crash
+  tags: [never, test_restart_crash]
+
+- ansible.builtin.import_tasks: tasks/test_set.yml
+  vars:
+    _test_name: test_set
+  tags: [never, test_set]
+
+- ansible.builtin.import_tasks: tasks/test_start.yml
+  vars:
+    _test_name: test_start
+  tags: [never, test_start]
+
+- ansible.builtin.import_tasks: tasks/test_start2.yml
+  vars:
+    _test_name: test_start2
+  tags: [never, test_start2]
+
+- ansible.builtin.import_tasks: tasks/test_start3.yml
+  vars:
+    _test_name: test_start3
+  tags: [never, test_start3]
+
+- ansible.builtin.import_tasks: tasks/test_start_crash.yml
+  vars:
+    _test_name: test_start_crash
+  tags: [never, test_start_crash]
+
+- ansible.builtin.import_tasks: tasks/test_stop.yml
+  vars:
+    _test_name: test_stop
+  tags: [never, test_stop]
+
+- ansible.builtin.import_tasks: tasks/test_stop_crash.yml
+  vars:
+    _test_name: test_stop_crash
+  tags: [never, test_stop_crash]

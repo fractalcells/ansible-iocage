@@ -1,0 +1,15 @@
+---
+test_exec:
+  template: command
+  label: 'test_exec: Check if exec works in jail {{ lbr }} jname {{ rbr }}'
+  iocage:
+    state: exec
+    name: '{{ lbr }} jname {{ rbr }}'
+    cmd: '{{ lbr }} cmd {{ rbr }}'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg1 in result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }}'
+  vars:
+    _msg1: "\"rc: 0\""

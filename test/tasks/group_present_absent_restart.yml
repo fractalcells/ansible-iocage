@@ -1,0 +1,11 @@
+---
+# Ansible managed
+- ansible.builtin.import_tasks: tasks/test_present.yml
+  vars:
+    _test_name: test_present
+- ansible.builtin.import_tasks: tasks/test_absent.yml
+  vars:
+    _test_name: test_absent
+- ansible.builtin.import_tasks: tasks/test_restart_crash.yml
+  vars:
+    _test_name: test_restart_crash

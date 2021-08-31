@@ -1,0 +1,51 @@
+---
+# Ansible managed
+
+# Expect iocage to pass with expected message(s).
+# Status:
+# pass ..... module pass with expected message(s)
+# fail ..... module pass without expected message(s)
+# crash .... module crash
+
+- ansible.builtin.set_fact:
+    _crash: true
+
+- block:
+    - name: " >>> TEST START: template_create: Check if template {{ basejail }} can be created"
+      iocage:
+        {
+          "name": "{{ basejail }}",
+          "release": "{{ release }}",
+          "state": "template"
+        }
+      register: result
+    - ansible.builtin.set_fact:
+        _crash: false
+    - ansible.builtin.debug:
+        var: result
+      when: debug2|bool
+    - ansible.builtin.debug:
+        var: result.msg
+      when: debug|bool
+  rescue:
+    - ansible.builtin.debug:
+        var: ansible_failed_result
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_crash.yml
+
+- block:
+    - ansible.builtin.assert:
+        fail_msg: "[ERR] {{ _test_name }}: Failed: {{ result.msg }}"
+        success_msg: "[OK]  {{ _test_name }}: Passed: {{ result.msg }}"
+        that:
+          - _msg1 in result.msg or _msg2 in result.msg
+    - ansible.builtin.import_tasks: custom_stats_pass.yml
+  rescue:
+    - ansible.builtin.debug:
+        msg: "[ERR] {{ _test_name }} failed. Missing: {{ _msg1 }} or {{ _msg2 }}"
+      when: debug|bool
+    - ansible.builtin.import_tasks: custom_stats_fail.yml
+  vars:
+    _msg1: "{{ basejail }} was created"
+    _msg2: "{{ basejail }} already exists"
+  when: not _crash
