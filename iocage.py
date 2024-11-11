@@ -587,48 +587,53 @@ def jail_set(module, iocage_path, name, properties=None):
 
 
 def jail_create(module, iocage_path, name=None, properties=None, clone_from_name=None,
-                clone_from_template=None, release=None, basejail=False, thickjail=False, pkglist=None):
+                clone_from_template=None, release=None, basejail=False, thickjail=False,
+                pkglist=None, args=""):
 
-    if properties is None:
-        properties = {}
-
-    rc = 1
-    out = ""
-    _msg = ""
+    _changed = True
 
     if clone_from_name is None and clone_from_template is None:
+        cmd = f"{iocage_path} create -n {name} -r {release}"
         if basejail:
-            cmd = f"{iocage_path} create -b -n {name} -r {release}"
-
+            cmd += " -b"
         elif thickjail:
-            cmd = f"{iocage_path} create -T -n {name} -r {release} {_props_to_str(properties)}"
+            cmd += " -T"
+        if args:
+            cmd += f" {args}"
+        if pkglist is not None:
+            cmd += " -p " + pkglist
 
-        else:
-            cmd = f"{iocage_path} create -n {name} -r {release} {_props_to_str(properties)}"
+    elif clone_from_template is not None:
+        cmd = f"{iocage_path} create -n {name} -t {clone_from_template}"
+        if args:
+            cmd += f" {args}"
+        if pkglist is not None:
+            cmd += " -p " + pkglist
 
-        if pkglist:
-            cmd += " --pkglist=" + pkglist
+    elif clone_from_name is not None:
+        cmd = f"{iocage_path} clone -n {name}"
+        if args:
+            cmd += f" {args}"
+        cmd += f" {clone_from_name}"
 
-    elif clone_from_name:
-        cmd = f"{iocage_path} clone {clone_from_name} -n {name} {_props_to_str(properties)}"
-    elif clone_from_template:
-        cmd = f"{iocage_path} create -t {clone_from_template} -n {name} {_props_to_str(properties)}"
+    if properties is not None:
+        cmd += f" {_props_to_str(properties)}"
 
     if not module.check_mode:
         rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
                                           errors='surrogate_or_strict')
         if not rc == 0:
             _command_fail(module, f"Jail '{name}' could not be created.", cmd, rc, out, err)
-        _msg += f"Jail '{name}' was created with properties {str(properties)}.\n\n{cmd}"
+        _msg = f"Jail '{name}' was created with properties {str(properties)}.\n\n{cmd}"
         name = jail_exists(module, iocage_path, name)
         if not name:
             module.fail_json(msg=f"Jail '{name}' not created ???\ncmd: {cmd}\nstdout:\n{out}\nstderr:\n{err}")
 
     else:
-        _msg += f"Jail {name} would be created with command:\n{cmd}\n"
+        _msg = f"Jail {name} would be created with command:\n{cmd}\n"
         name = f"CHECK_MODE_FAKE_UUID_FOR_{name}"
 
-    return name, True, _msg
+    return name, _changed, _msg
 
 
 def jail_update(module, iocage_path, name):
@@ -841,8 +846,8 @@ def run_module():
         if p["state"] == "template":
             if properties is None:
                 properties = {}
-            properties["template"] = "true"
-            properties["boot"] = "false"
+            properties["template"] = 1
+            properties["boot"] = 0
             if name in facts["iocage_templates"]:
                 # local variable 'jail_exists' is assigned to but never used [F841]
                 # jail_exists = True
@@ -855,7 +860,7 @@ def run_module():
         elif p["state"] == "thickjail":
             do_thickjail = True
 
-        elif clone_from:
+        elif clone_from is not None:
             if clone_from in facts["iocage_jails"]:
                 clone_from_name = clone_from
             elif clone_from in facts["iocage_templates"]:
@@ -867,10 +872,10 @@ def run_module():
                 else:
                     module.fail_json(msg=f"unable to create jail {name}\nbasejail {clone_from} doesn't exist")
 
-        if name not in facts["iocage_templates"] and name not in facts["iocage_jails"]:
+        if name not in jails:
             name, changed, _msg = jail_create(module, iocage_path, name, properties, clone_from_name,
                                               clone_from_template, release, do_basejail, do_thickjail,
-                                              pkglist)
+                                              pkglist, args)
             msgs.append(_msg)
         else:
             changed, _msg = jail_set(module, iocage_path, name, properties)
