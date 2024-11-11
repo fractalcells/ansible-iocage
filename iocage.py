@@ -61,7 +61,8 @@ options:
     args:
       description:
           - Additional arguments.
-      type: dict
+      type: str
+      default: ""
     user:
       description:
         - I(user) who runs the command I(cmd).
@@ -77,7 +78,7 @@ options:
       type: str
     release:
       description:
-        - Specify which RELEASE to fetch, update, or create a jail.
+        - Specify which RELEASE to fetch, update, or create a jail from.
       type: str
     update:
       description:
@@ -389,7 +390,6 @@ def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", compo
                 if _component != "":
                     args += f" -F {_component}"
         cmd = f"{iocage_path} fetch -r {release} {args}"
-        rc = 1
         rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
                                           errors='surrogate_or_strict')
         if not rc == 0:
@@ -403,7 +403,7 @@ def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", compo
         _changed = True
         _msg = f"Release {release} would have been fetched."
 
-    return release, _changed, _msg
+    return _changed, _msg
 
 
 def jail_restart(module, iocage_path, name):
@@ -682,17 +682,17 @@ def run_module():
                    default="facts",
                    choices=["basejail", "thickjail", "template", "present", "cloned", "started",
                             "stopped", "restarted", "fetched", "exec", "pkg", "exists", "absent",
-                            "set", "facts"],),
+                            "set", "facts"]),
         name=dict(type='str'),
         pkglist=dict(type='path'),
         properties=dict(type='dict'),
-        args=dict(type='dict'),
+        args=dict(type='str', default=""),
         user=dict(type='str', default="root"),
         cmd=dict(type='str'),
         clone_from=dict(type='str'),
         release=dict(type='str'),
-        update=dict(type='bool', default=False,),
-        components=dict(type='list', elements='path', aliases=["files", "component"],),)
+        update=dict(type='bool', default=False),
+        components=dict(type='list', elements='path', aliases=["files", "component"]),)
 
     module = AnsibleModule(argument_spec=module_args,
                            supports_check_mode=True)
@@ -810,7 +810,7 @@ def run_module():
 
     elif p["state"] == "fetched":
         if update or release not in facts["iocage_releases"]:
-            rel, changed, _msg = release_fetch(module, iocage_path, update, release, components, args)
+            changed, _msg = release_fetch(module, iocage_path, update, release, components, args)
             msgs.append(_msg)
             facts["iocage_releases"] = _get_iocage_facts(module, iocage_path, "releases")
             if release not in facts["iocage_releases"] or update:
@@ -833,7 +833,7 @@ def run_module():
         # jail_exists = False
 
         if p["state"] != "cloned" and release not in facts["iocage_releases"]:
-            release, _release_changed, _release_msg = release_fetch(module, iocage_path, update, release, components, args)
+            _release_changed, _release_msg = release_fetch(module, iocage_path, update, release, components, args)
             if _release_changed:
                 facts["iocage_releases"] = _get_iocage_facts(module, iocage_path, "releases")
                 msgs.append(_release_msg)
@@ -880,7 +880,7 @@ def run_module():
 
         if p["update"]:
             if release not in facts["iocage_releases"]:
-                release, _release_changed, _release_msg = release_fetch(module, iocage_path, update, release, components, args)
+                _release_changed, _release_msg = release_fetch(module, iocage_path, update, release, components, args)
                 if _release_changed:
                     _msg += _release_msg
                     facts["iocage_releases"] = _get_iocage_facts(module, iocage_path, "releases")
