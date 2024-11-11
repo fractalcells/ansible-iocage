@@ -365,14 +365,14 @@ def _props_to_str(props):
     # minargs = ""
     for _prop in props:
         _val = props[_prop]
-        if _val == '-' or _val == '' or not _val:
+        if _val == '-' or _val == '' or _val is None:
             continue
         if _val in ['yes', 'on', True]:
             argstr += f"{_prop}=1 "
         elif _val in ['no', 'off', False]:
             argstr += f"{_prop}=0 "
-        elif _val in ['-', 'none']:
-            argstr += f"{_prop}={_val} "
+        elif isinstance(_val, str):
+            argstr += f'{_prop}="{_val}" '
         else:
             argstr += f"{_prop}={str(_val)} "
 
@@ -521,11 +521,8 @@ def jail_set(module, iocage_path, name, properties=None):
     if properties is None:
         properties = {}
 
-    rc = 1
-    out = ""
     _msg = ""
     _changed = False
-    cmd = ""
     _existing_props = _jail_get_properties(module, iocage_path, name)
     _props_to_be_changed = {}
     for _property in properties:
@@ -536,7 +533,6 @@ def jail_set(module, iocage_path, name, properties=None):
         if _property == "template":
             continue
 
-        propval = None
         _val = properties[_property]
         _oval = _existing_props[_property]
         if _val in [0, 'no', 'off', False]:
@@ -553,15 +549,14 @@ def jail_set(module, iocage_path, name, properties=None):
                              .format(_property, str(_val).replace("'", "'\\''"), name))
 
         if 'CHECK_NEW_JAIL' in _existing_props or \
-           (_property in _existing_props.keys() and str(_existing_props[_property]) != str(propval)) and \
-           propval is not None:
+           (str(_existing_props[_property]) != str(propval) and propval is not None):
             _props_to_be_changed[_property] = propval
 
     if len(_props_to_be_changed) > 0:
-        need_restart = False
-        for p in _props_to_be_changed.keys():
-            if p in ['ip4_addr', 'ip6_addr', 'template', 'interfaces', 'vnet', 'host_hostname']:
-                need_restart = _jail_started(module, iocage_path, name)
+        if len(list(set(_props_to_be_changed.keys()) & set(['ip4_addr', 'ip6_addr', 'template', 'interfaces', 'vnet', 'host_hostname']))) > 0:
+            need_restart = _jail_started(module, iocage_path, name)
+        else:
+            need_restart = False
 
         cmd = f"{iocage_path} set {_props_to_str(_props_to_be_changed)} {name}"
 
