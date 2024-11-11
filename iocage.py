@@ -342,10 +342,8 @@ def jail_exists(module, iocage_path, argument=None, assume_absent=False):
 def jail_start(module, iocage_path, name):
 
     cmd = f"{iocage_path} start {name}"
-    rc = 1
-    out = ""
-    _msg = ""
     _changed = True
+
     if not module.check_mode:
         rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
                                           errors='surrogate_or_strict')
@@ -409,16 +407,14 @@ def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", compo
 def jail_restart(module, iocage_path, name):
 
     cmd = f"{iocage_path} restart {name}"
-    rc = 1
-    out = ""
-    _msg = ""
     _changed = True
+
     if not module.check_mode:
         rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
                                           errors='surrogate_or_strict')
         if not rc == 0:
             _command_fail(module, f"Jail {name} could not be restarted.", cmd, rc, out, err)
-        _msg = f"Jail {name} was restarted.\n{rc}"
+        _msg = f"Jail {name} was restarted.\n{out}"
     else:
         _msg = f"Jail {name} would have been restarted."
 
@@ -428,19 +424,16 @@ def jail_restart(module, iocage_path, name):
 def jail_stop(module, iocage_path, name):
 
     cmd = f"{iocage_path} stop {name}"
-    _changed = False
-    rc = 1
-    out = ""
-    _msg = ""
+    _changed = True
 
     if not module.check_mode:
         rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
                                           errors='surrogate_or_strict')
         if not rc == 0:
             _command_fail(module, f"Jail {name} could not be stopped.", cmd, rc, out, err)
-        _msg = f"Jail {name} was stopped.\n"
+        _msg = f"Jail {name} was stopped.\n{out}"
     else:
-        _msg = f"Jail {name} would have been stopped"
+        _msg = f"Jail {name} would have been stopped."
 
     return _changed, _msg
 
@@ -773,14 +766,15 @@ def run_module():
         if jails[name]["state"] != "up":
             changed, _msg = jail_start(module, iocage_path, name)
             msgs.append(_msg)
-            jails[name] = _get_iocage_facts(module, iocage_path, "jails", name)
-            if jails[name]["state"] != "up" and not module.check_mode:
-                module.fail_json(msg=f"Starting jail {name} failed with {_msg}")
+            if not module.check_mode:
+                jails[name] = _get_iocage_facts(module, iocage_path, "jails", name)
+                if jails[name]["state"] != "up":
+                    module.fail_json(msg=f"Starting jail {name} failed with {_msg}")
         else:
             msgs.append(f"Jail {name} already started")
 
     elif p["state"] == "stopped":
-        if jails[name]["state"] == "up":
+        if jails[name]["state"] != "down":
             changed, _msg = jail_stop(module, iocage_path, name)
             msgs.append(_msg)
             if not module.check_mode:
@@ -792,10 +786,11 @@ def run_module():
 
     elif p["state"] == "restarted":
         changed, _msg = jail_restart(module, iocage_path, name)
-        jails[name] = _get_iocage_facts(module, iocage_path, "jails", name)
-        if jails[name]["state"] != "up":
-            module.fail_json(msg=f"Restarting jail {name} failed with {_msg}")
         msgs.append(_msg)
+        if not module.check_mode:
+            jails[name] = _get_iocage_facts(module, iocage_path, "jails", name)
+            if jails[name]["state"] != "up":
+                module.fail_json(msg=f"Restarting jail {name} failed with {_msg}")
 
     elif p["state"] == "exec":
         changed, _msg, out, err = jail_exec(module, iocage_path, name, user, cmd)
