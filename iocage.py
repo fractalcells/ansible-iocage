@@ -374,7 +374,7 @@ def _props_to_str(props):
         elif _val in ['-', 'none']:
             argstr += f"{_prop}={_val} "
         else:
-            argstr += f"{_prop}={str(_val)} "
+            argstr += f'{_prop}="{str(_val)}" '
 
     return argstr
 
