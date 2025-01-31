@@ -78,6 +78,7 @@ options:
     release:
       description:
         - Specify which RELEASE to fetch, update, or create a jail.
+          Use 'latest' for latest (fetched) release.
       type: str
     update:
       description:
@@ -388,6 +389,9 @@ def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", compo
             for _component in components:
                 if _component != "":
                     args += f" -F {_component}"
+        if release == "latest":
+            release = _get_iocage_facts(module,iocage_path,"releases")[-1]
+
         cmd = f"{iocage_path} fetch -r {release} {args}"
         rc = 1
         rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
