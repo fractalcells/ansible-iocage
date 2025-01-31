@@ -44,7 +44,7 @@ options:
       type: str
       choices: [basejail, thickjail, template, present, cloned, started,
                 stopped, restarted, fetched, exec, pkg, exists, absent,
-                set, facts]
+                set, facts, snapshot]
       default: facts
     name:
       description:
@@ -78,6 +78,7 @@ options:
     release:
       description:
         - Specify which RELEASE to fetch, update, or create a jail.
+          Use 'latest' for latest (fetched) release.
       type: str
     update:
       description:
@@ -190,6 +191,11 @@ EXAMPLES = r'''
   iocage:
     name: foo
     state: absent
+
+- name: Take a snapshot of a jail
+  iocage:
+    name: foo
+    state: snapshot
 '''
 
 RETURN = r'''
@@ -374,7 +380,7 @@ def _props_to_str(props):
         elif _val in ['-', 'none']:
             argstr += f"{_prop}={_val} "
         else:
-            argstr += f"{_prop}={str(_val)} "
+            argstr += f'{_prop}="{str(_val)}" '
 
     return argstr
 
@@ -388,6 +394,9 @@ def release_fetch(module, iocage_path, update=False, release="NO-RELEASE", compo
             for _component in components:
                 if _component != "":
                     args += f" -F {_component}"
+        if release == "latest":
+            release = _get_iocage_facts(module,iocage_path,"releases")[-1]
+
         cmd = f"{iocage_path} fetch -r {release} {args}"
         rc = 1
         rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
@@ -674,6 +683,25 @@ def jail_destroy(module, iocage_path, name):
 
     return name, _changed, _msg
 
+def jail_snapshot(module, iocage_path, name):
+
+    rc = 1
+    out = ""
+    _msg = ""
+    _changed = False
+    cmd = f"{iocage_path} snapshot {name}"
+
+    if not module.check_mode:
+        rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
+                                          errors='surrogate_or_strict')
+        if not rc == 0:
+            _command_fail(module, f"Jail '{name}' could not be snapshotted.", cmd, rc, out, err)
+        _msg = f"Snapshot of jail '{name}' was taken: {out}."
+        _changed = True
+    else:
+        _msg = f"Jail {name} would have been snapshotted."
+
+    return _changed, _msg, out, err
 
 def run_module():
 
@@ -682,10 +710,11 @@ def run_module():
                    default="facts",
                    choices=["basejail", "thickjail", "template", "present", "cloned", "started",
                             "stopped", "restarted", "fetched", "exec", "pkg", "exists", "absent",
-                            "set", "facts"],),
+                            "set", "facts", "snapshot"],),
         name=dict(type='str'),
         pkglist=dict(type='path'),
         properties=dict(type='dict'),
+        priority=dict(default=99, required=False),
         args=dict(type='dict'),
         user=dict(type='str', default="root"),
         cmd=dict(type='str'),
@@ -712,6 +741,7 @@ def run_module():
     update = p["update"]
     components = p["components"]
     pkglist = p["pkglist"]
+    priority = p["priority"]
 
     msgs = []
     changed = False
@@ -740,7 +770,7 @@ def run_module():
     # Input validation
 
     # states that need name of jail
-    if name is None and p["state"] in ["started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent"]:
+    if name is None and p["state"] in ["started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent", "snapshot"]:
         module.fail_json(msg=f"name needed for state {p['state']}")
 
     # states that need release defined
@@ -761,7 +791,7 @@ def run_module():
                 module.fail_json(msg=f"Release not recognised: {out}")
 
     # need existing jail
-    if p["state"] in ["started", "stopped", "restarted", "set", "exec", "pkg", "exists"]:
+    if p["state"] in ["started", "stopped", "restarted", "set", "exec", "pkg", "exists", "snapshot"]:
         if name not in jails:
             module.fail_json(msg=f"Jail '{name}' doesn't exist")
 
@@ -807,6 +837,10 @@ def run_module():
 
     elif p["state"] == "exists":
         msgs.append(f"Jail {name} exists")
+
+    elif p["state"] == "snapshot":
+        changed, _msg, out, err = jail_snapshot(module, iocage_path, name)
+        msgs.append(_msg)
 
     elif p["state"] == "fetched":
         if update or release not in facts["iocage_releases"]:
