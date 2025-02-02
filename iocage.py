@@ -138,6 +138,7 @@ EXAMPLES = r'''
     pkglist: /path/to/pkglist.json
     properties:
       ip4_addr: 'lo1|10.1.0.5'
+      priority: 42
       boot: true
       allow_sysvipc: true
       defaultrouter: '10.1.0.1'
@@ -686,6 +687,7 @@ def run_module():
         name=dict(type='str'),
         pkglist=dict(type='path'),
         properties=dict(type='dict'),
+        priority=dict(default=99, required=False),
         args=dict(type='dict'),
         user=dict(type='str', default="root"),
         cmd=dict(type='str'),
@@ -712,6 +714,7 @@ def run_module():
     update = p["update"]
     components = p["components"]
     pkglist = p["pkglist"]
+    priority = p["priority"]
 
     msgs = []
     changed = False
