@@ -38,3 +38,6 @@
 - ansible.builtin.import_tasks: tasks/test_absent2.yml
   vars:
     _test_name: test_absent2
+- ansible.builtin.import_tasks: tasks/test_snapshot.yml
+  vars:
+    _test_name: test_snapshot

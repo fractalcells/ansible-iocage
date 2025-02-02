@@ -16,3 +16,4 @@ group_test:
     - test: test_start3
     - test: test_absent
     - test: test_absent2
+    - test: test_snapshot

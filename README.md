@@ -266,6 +266,14 @@ TASK [Create playbook iocage_test.yml] ***************************************
 ok: [localhost]
 ```
 
+Or to generate a test run *configure.yml* with the option *-t create_tests* and select specific ones with the option *-e my_tests=test_absent*
+```sh
+shell> ansible-playbook configure.yml -e my_tests=test_absent -t create_tests
+...
+TASK [Create test files in directory tasks] *********************************
+ok: [localhost] => (item=test_absent)
+```
+
 Create file with the parameters of the tests, e.g. run the tests on
 the nodes *test_23,test_29*, use jail *test_31*, enable debug, and set
 strategy *free*

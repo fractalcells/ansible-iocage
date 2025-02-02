@@ -1,0 +1,15 @@
+---
+test_snapshot:
+  template: command
+  label: 'test_snapshot: Check if jail {{ lbr }} jname {{ rbr }} can be started'
+  iocage:
+    state: snapshot
+    name: '{{ lbr }} jname {{ rbr }}'
+  debug:
+    - var: result.msg
+  assert:
+    - '_msg1 in result.msg or _msg2 == result.msg'
+  msg_err: '[ERR] {{ lbr }} _test_name {{ rbr }} failed. Missing: {{ lbr }} _msg1 {{ rbr }} or {{ lbr }} _msg2 {{ rbr }}'
+  vars:
+    _msg1: "\"Snapshot of jail {{ lbr }} jname {{ rbr }} created.\""
+    _msg2: "\"Snapshot of jail {{ lbr }} jname {{ rbr }} already exists.\""

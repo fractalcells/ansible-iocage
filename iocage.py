@@ -44,7 +44,7 @@ options:
       type: str
       choices: [basejail, thickjail, template, present, cloned, started,
                 stopped, restarted, fetched, exec, pkg, exists, absent,
-                set, facts]
+                set, facts, snapshot]
       default: facts
     name:
       description:
@@ -190,6 +190,11 @@ EXAMPLES = r'''
   iocage:
     name: foo
     state: absent
+
+- name: Take a snapshot of a jail
+  iocage:
+    name: foo
+    state: snapshot
 '''
 
 RETURN = r'''
@@ -674,6 +679,25 @@ def jail_destroy(module, iocage_path, name):
 
     return name, _changed, _msg
 
+def jail_snapshot(module, iocage_path, name):
+
+    rc = 1
+    out = ""
+    _msg = ""
+    _changed = False
+    cmd = f"{iocage_path} snapshot {name}"
+
+    if not module.check_mode:
+        rc, out, err = module.run_command(to_bytes(cmd, errors='surrogate_or_strict'),
+                                          errors='surrogate_or_strict')
+        if not rc == 0:
+            _command_fail(module, f"Jail '{name}' could not be snapshotted.", cmd, rc, out, err)
+        _msg = f"Snapshot of jail '{name}' was taken: {out}."
+        _changed = True
+    else:
+        _msg = f"Jail {name} would have been snapshotted."
+
+    return _changed, _msg, out, err
 
 def run_module():
 
@@ -740,7 +764,7 @@ def run_module():
     # Input validation
 
     # states that need name of jail
-    if name is None and p["state"] in ["started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent"]:
+    if name is None and p["state"] in ["started", "stopped", "restarted", "exists", "set", "exec", "pkg", "absent", "snapshot"]:
         module.fail_json(msg=f"name needed for state {p['state']}")
 
     # states that need release defined
@@ -761,7 +785,7 @@ def run_module():
                 module.fail_json(msg=f"Release not recognised: {out}")
 
     # need existing jail
-    if p["state"] in ["started", "stopped", "restarted", "set", "exec", "pkg", "exists"]:
+    if p["state"] in ["started", "stopped", "restarted", "set", "exec", "pkg", "exists", "snapshot"]:
         if name not in jails:
             module.fail_json(msg=f"Jail '{name}' doesn't exist")
 
@@ -807,6 +831,10 @@ def run_module():
 
     elif p["state"] == "exists":
         msgs.append(f"Jail {name} exists")
+
+    elif p["state"] == "snapshot":
+        changed, _msg, out, err = jail_snapshot(module, iocage_path, name)
+        msgs.append(_msg)
 
     elif p["state"] == "fetched":
         if update or release not in facts["iocage_releases"]:

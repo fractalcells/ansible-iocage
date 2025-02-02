@@ -131,6 +131,11 @@
     _test_name: test_set
   tags: [never, test_set]
 
+- ansible.builtin.import_tasks: tasks/test_snapshot.yml
+  vars:
+    _test_name: test_snapshot
+  tags: [never, test_snapshot]
+
 - ansible.builtin.import_tasks: tasks/test_start.yml
   vars:
     _test_name: test_start
